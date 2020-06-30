@@ -19,9 +19,9 @@ php_admin_value sp.configuration_file "/etc/sentora/configs/php/sp/sentora.rules
 # PHP Admin Values
 php_admin_value session.save_path "/var/sentora/sessions"
 
-ErrorLog "{$cp.log_dir}panel/sentora-error.log" 
-CustomLog "{$cp.log_dir}panel/sentora-access.log" combined
-CustomLog "{$cp.log_dir}panel/sentora-bandwidth.log" common
+ErrorLog "{$cp.log_dir}sentora-error.log" 
+CustomLog "{$cp.log_dir}sentora-access.log" combined
+CustomLog "{$cp.log_dir}sentora-bandwidth.log" common
 
 {if $loaderrorpages <> "0"}
 {foreach $loaderrorpages as $errorpage}
