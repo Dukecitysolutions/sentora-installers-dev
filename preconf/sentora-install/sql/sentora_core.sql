@@ -711,17 +711,12 @@ insert  into `x_settings`(`so_id_pk`,`so_name_vc`,`so_cleanname_vc`,`so_value_tx
 
 insert  into `x_settings`(`so_id_pk`,`so_name_vc`,`so_cleanname_vc`,`so_value_tx`,`so_defvalues_tx`,`so_desc_tx`,`so_module_vc`,`so_usereditable_en`) values 
 (122,'welcome_message','Custom e-mail Welcome Message','Hi {{fullname}},
-(123, 'panel_ssl_tx', 'Sentora Panel SSL Config', NULL, NULL, 'Sentora SSL settings and certs', 'Sentora Config', 'true');
-
 We are pleased to inform you that your new hosting account is now active!
 You can access your web hosting control panel using this link: {{controlpanelurl}}
-
 Your username and password is as follows:
 Username: {{username}}
 Password: {{password}}
-
 Many thanks,
-
 The management',NULL,'Here you can edit the Welcme Message e-mail','Sentora Config','true');
 /*Table structure for table `x_translations` */
 
@@ -811,9 +806,6 @@ CREATE TABLE `x_vhosts` (
   `vh_active_in` int(1) DEFAULT '0',
   `vh_suhosin_in` int(1) DEFAULT '1',
   `vh_obasedir_in` int(1) DEFAULT '1',
-  `vh_ssl_tx` text,
-  `vh_ssl_port_in` int(6) DEFAULT NULL,
-  `vh_custom_sp_tx` text,
   `vh_custom_tx` text,
   `vh_custom_port_in` int(6) DEFAULT NULL,
   `vh_custom_ip_vc` varchar(45) DEFAULT NULL,
