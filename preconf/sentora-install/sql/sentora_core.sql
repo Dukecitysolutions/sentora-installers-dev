@@ -707,7 +707,9 @@ insert  into `x_settings`(`so_id_pk`,`so_name_vc`,`so_cleanname_vc`,`so_value_tx
 (118,'cron_reload_flag','Cron Reload Flags','-u',NULL,'Cron reload command flags in Linux Only','Cron Config','true'),
 (119,'cron_reload_user','Cron Reload User','',NULL,'Cron reload apache user in Linux','Cron Config','true'),
 (120,'login_csfr','Remote Login Forms','false','false|true','Disables CSFR protection on the login form to enable remote login forms.','Sentora Config','true'),
-(121,'sentora_port','Sentora Apache Port','80',NULL,'Sentora Apache panel port (change will be pending until next daemon run)','Sentora Config','true');
+(121,'sentora_port','Sentora Apache Port','80',NULL,'Sentora Apache panel port (change will be pending until next daemon run)','Sentora Config','true'),
+(122, 'welcome_message', 'Custom e-mail Welcome Message', 'Hi {{fullname}},\nWe are pleased to inform you that your new hosting account is now active!\nYou can access your web hosting control panel using this link: {{controlpanelurl}}\nYour username and password is as follows:\nUsername: {{username}}\nPassword: {{password}}\nMany thanks,\nThe management', NULL, 'Here you can edit the Welcme Message e-mail', 'Sentora Config', 'true'),
+(123, 'panel_ssl_tx', 'Sentora Panel SSL Config', NULL, NULL, 'Sentora SSL settings and certs', 'Sentora Config', 'true');
 
 insert  into `x_settings`(`so_id_pk`,`so_name_vc`,`so_cleanname_vc`,`so_value_tx`,`so_defvalues_tx`,`so_desc_tx`,`so_module_vc`,`so_usereditable_en`) values 
 (122,'welcome_message','Custom e-mail Welcome Message','Hi {{fullname}},
@@ -806,6 +808,9 @@ CREATE TABLE `x_vhosts` (
   `vh_active_in` int(1) DEFAULT '0',
   `vh_suhosin_in` int(1) DEFAULT '1',
   `vh_obasedir_in` int(1) DEFAULT '1',
+  `vh_ssl_tx` text,
+  `vh_ssl_port_in` int(6) DEFAULT NULL,
+  `vh_custom_sp_tx` text,
   `vh_custom_tx` text,
   `vh_custom_port_in` int(6) DEFAULT NULL,
   `vh_custom_ip_vc` varchar(45) DEFAULT NULL,
