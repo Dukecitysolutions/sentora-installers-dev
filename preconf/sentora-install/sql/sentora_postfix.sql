@@ -1,3 +1,12 @@
+-- save current setting of sql_mode
+SET @old_sql_mode := @@sql_mode ;
+
+-- derive a new value by removing NO_ZERO_DATE and NO_ZERO_IN_DATE
+SET @new_sql_mode := @old_sql_mode ;
+SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_DATE,'  ,','));
+SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_IN_DATE,',','));
+SET @@sql_mode := @new_sql_mode ;
+
 CREATE DATABASE `sentora_postfix` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 USE `sentora_postfix`;
@@ -102,3 +111,5 @@ CREATE TABLE `vacation_notification` (
   PRIMARY KEY (`on_vacation`,`notified`),
   CONSTRAINT `vacation_notification_pkey` FOREIGN KEY (`on_vacation`) REFERENCES `vacation` (`email`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Postfix Admin - Virtual Vacation Notifications';
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
