@@ -18,8 +18,8 @@ GRANT ALL PRIVILEGES ON sentora_postfix . * TO postfix@localhost;
 CREATE TABLE `admin` (
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
+  `modified` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Postfix Admin - Virtual Admins';
@@ -28,8 +28,8 @@ CREATE TABLE `alias` (
   `address` varchar(255) NOT NULL,
   `goto` text NOT NULL,
   `domain` varchar(255) NOT NULL,
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
+  `modified` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`address`),
   KEY `domain` (`domain`)
@@ -38,8 +38,8 @@ CREATE TABLE `alias` (
 CREATE TABLE `alias_domain` (
   `alias_domain` varchar(255) NOT NULL,
   `target_domain` varchar(255) NOT NULL,
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
+  `modified` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`alias_domain`),
   KEY `active` (`active`),
@@ -63,8 +63,8 @@ CREATE TABLE `domain` (
   `quota` bigint(20) NOT NULL DEFAULT '0',
   `transport` varchar(255) NOT NULL,
   `backupmx` tinyint(1) NOT NULL DEFAULT '0',
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
+  `modified` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Postfix Admin - Virtual Domains';
@@ -78,8 +78,8 @@ CREATE TABLE `mailbox` (
   `quota` bigint(20) NOT NULL DEFAULT '0',
   `local_part` varchar(255) NOT NULL,
   `domain` varchar(255) NOT NULL,
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
+  `modified` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`username`),
   KEY `domain` (`domain`)
@@ -98,7 +98,7 @@ CREATE TABLE `vacation` (
   `body` text CHARACTER SET utf8 NOT NULL,
   `cache` text NOT NULL,
   `domain` varchar(255) NOT NULL,
-  `created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `created` datetime NOT NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`email`),
   KEY `email` (`email`)
