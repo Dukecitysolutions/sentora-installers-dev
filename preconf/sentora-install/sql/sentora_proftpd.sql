@@ -94,8 +94,8 @@ CREATE TABLE IF NOT EXISTS `ftpuser` (
   `homedir` varchar(255) NOT NULL DEFAULT '',
   `shell` varchar(16) NOT NULL DEFAULT '/sbin/nologin',
   `count` int(11) NOT NULL DEFAULT '0',
-  `accessed` datetime NOT NULL DEFAULT NULL,
-  `modified` datetime NOT NULL DEFAULT NULL,
+  `accessed` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `userid` (`userid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='ProFTP user table' AUTO_INCREMENT=1 ;
