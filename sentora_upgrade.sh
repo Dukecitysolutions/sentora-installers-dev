@@ -147,7 +147,6 @@ fi
 # ***************************************
 # Installation really starts here
 
-
 # Install PHP 7.3
 if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	if [[ "$VER" = "16.04" || "$VER" = "8" ]]; then
@@ -192,7 +191,6 @@ if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 		echo "Setting session.save_path = /var/sentora/sessions"
 		sed -i 's|;session.save_path = "/var/lib/php/sessions"|session.save_path = "/var/sentora/sessions"|g' /etc/php/7.3/apache2/php.ini
 			  
-
 	fi 
             
 	PHP_INI_PATH="/etc/php/7.3/apache2/php.ini"
@@ -225,8 +223,6 @@ elif [[ "$OS" = "CentOs" ]]; then
 		sed -i 's|;upload_tmp_dir =|upload_tmp_dir = /var/sentora/temp/|g' $PHP_INI_PATH
 		echo "Setting session.save_path = /var/sentora/sessions"
 		sed -i 's|;session.save_path = "/tmp"|session.save_path = "/var/sentora/sessions"|g' $PHP_INI_PATH
-
-		
 		        
 	fi
 fi 	
@@ -726,7 +722,8 @@ rm -rf phpmyadmin.zip
 $PANEL_PATH/panel/bin/setso --set apache_changed "true"
 	
 # Set dbversion
-$PANEL_PATH/panel/bin/setso --set dbversion "$SENTORA_UPDATER_VERSION"
+y
+ dbversion "$SENTORA_UPDATER_VERSION"
 	
 # Run Daemon
 php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q $PANEL_PATH/panel/bin/daemon.php		
