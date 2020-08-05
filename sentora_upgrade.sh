@@ -32,11 +32,24 @@
 #   and all those who participated to this and to previous installers.
 #   Thanks to all.
 
-SENTORA_UPDATER_VERSION="1.1.0"
+## 
+# SENTORA_CORE/UPGRADER_VERSION
+# master - latest unstable
+# 1.0.3 - example stable tag
+##
+SENTORA_UPDATER_VERSION="1.1.0" - PRODUCTION READY
+SENTORA_PRECONF_VERSION="dev-master"
+SENTORA_CORE_VERSION="dev-master"
+
+
+
+
+
+
 PANEL_PATH="/etc/sentora"
 PANEL_CONF="/etc/sentora/configs"
-SENTORA_CORE_UPGRADE="~/sentora_core"
-SENTORA_PRECONF_UPGRADE="~/sentora_preconfig"
+SENTORA_CORE_UPGRADE="$HOME/sentora-core-$SENTORA_PRECONF_VERSION"
+SENTORA_PRECONF_UPGRADE="$HOME/sentora-installers-$SENTORA_CORE_VERSION"
 
 
 SENTORA_INSTALLED_DBVERSION=$($PANEL_PATH/panel/bin/setso --show dbversion)
@@ -55,7 +68,7 @@ SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
 #--- Display the 'welcome' splash/user warning info..
 echo ""
 echo "############################################################################################"
-echo "#  Welcome to the Official Sentora Upgrader v.$SENTORA_UPDATER_VERSION  					 #"
+echo "#  Welcome to the Official Sentora Upgrader v.$SENTORA_UPGRADER_VERSION					 #"
 echo "############################################################################################"
 echo ""
 echo -e "\n- Checking that minimal requirements are ok"
@@ -102,12 +115,12 @@ else
 fi
 
 ### Ensure that sentora v1.0.3 or greater is installed
-if [[ "$SEN_VER" > "1.0.2" ]]; then
-    echo "- Found Sentora v$SEN_VER, processing..."
-else
-    echo "Sentora version v1.0.3 is required to install, you have v$SEN_VER. aborting..."
-    exit 1
-fi
+#if [[ "$SEN_VER" > "1.0.2" ]]; then
+ #   echo "- Found Sentora v$SEN_VER, processing..."
+#else
+ #   echo "Sentora version v1.0.3 is required to install, you have v$SEN_VER. aborting..."
+  #  exit 1
+#fi
 
 # Check for some common packages that we know will affect the installation/operating of Sentora.
 if [[ "$OS" = "CentOs" ]] ; then
@@ -140,19 +153,16 @@ if [[ "$OS" = "CentOs" ]]; then
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	if [[ "$VER" = "16.04" || "$VER" = "8" ]]; then
 		# Install PHP 7.3 Repos & enable
-		$PACKAGE_INSTALLER software-properties-common
-		add-apt-repository -y ppa:ondrej/apache2
-		add-apt-repository -y ppa:ondrej/php
+		#$PACKAGE_INSTALLER software-properties-common
+		#add-apt-repository -y ppa:ondrej/apache2
+		#add-apt-repository -y ppa:ondrej/php
 		apt-get -yqq update
-		#apt-get -yqq upgrade
+		apt-get -yqq upgrade
 	fi
 fi
 
 # ***************************************
 # Installation really starts here
-
-
-
 
 
 
@@ -180,14 +190,6 @@ fi
 			
 			yum -y --enablerepo=remi-php73 install php php-devel php-gd php-mcrypt php-mysql php-xml php-xmlrpc php-zip
 				
-		elif [[ "$VER" = "8" ]]; then
-			$PACKAGE_INSTALLER php php-devel php-gd php-json php-mbstring php-intl php-mysqlnd php-xml php-xmlrpc php-zip
-			$PACKAGE_INSTALLER libmcrypt libmcrypt-devel php-imap  #Epel packages
-			
-            # Enable Mod_php & Prefork for Apache/PHP 7.3
-            sed -i 's|#LoadModule mpm_prefork_module|LoadModule mpm_prefork_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
-            sed -i 's|LoadModule mpm_event_module|#LoadModule mpm_event_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
-			
 		fi
 		
 		PHP_INI_PATH="/etc/php.ini"
@@ -195,11 +197,18 @@ fi
 	elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 		
 		if [[ "$VER" = "16.04" ]]; then
-			echo -e "\n-Installing OS Default PHP version..."
+			echo -e "\n-Installing OS Default PHP 7.0 version..."
+			
+			# Remove and purge installed PHP 5.x system copied over
+			$PACKAGE_REMOVER php5.*
+			apt-get purge php5.*
 			
 			$PACKAGE_INSTALLER libapache2-mod-php7.0 php7.0-common php7.0-cli php7.0-mysql php7.0-gd php7.0-mcrypt php7.0-curl php-pear php7.0-imap php7.0-xmlrpc php7.0-xsl php7.0-intl php-mbstring php7.0-mbstring php-gettext php7.0-dev php7.0-zip
 			
 			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"
+			
+			# Enable Apache mod_php7.0
+			sudo a2enmod php7.0
 		fi		
 	fi
 
@@ -237,14 +246,22 @@ fi
 # Install git
 $PACKAGE_INSTALLER git
 
+if [[ "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]]; then
+	# update OLD CA certificates
+	sudo apt-get install apt-transport-https ca-certificates -y
+	sudo update-ca-certificates
+fi
+	
 #setup PHP_PERDIR in Snuffleupagus.c in src
 mkdir -p /etc/snuffleupagus
-cd /etc/snuffleupagus/src || exit
+cd /etc || exit
 	
 # Clone Snuffleupagus
 git clone https://github.com/nbs-system/snuffleupagus
-	
-sed -i 's/PHP_INI_SYSTEM/PHP_INI_PERDIR/g' snuffleupagus.c
+		
+cd /etc/snuffleupagus/src || exit
+		
+sed -i 's|PHP_INI_SYSTEM|PHP_INI_PERDIR|g' snuffleupagus.c
 		
 phpize
 ./configure --enable-snuffleupagus
@@ -275,9 +292,9 @@ elif [[ "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]]; then
 	
 	# Enable snuffleupagus in PHP.ini
 	echo -e "\nUpdating Ubuntu PHP.ini Enable snuffleupagus..."
-	echo "extension=snuffleupagus.so" >> /etc/php/7.3/mods-available/snuffleupagus.ini
-	echo "sp.configuration_file=/etc/sentora/configs/php/sp/snuffleupagus.rules" >> /etc/php/7.3/mods-available/snuffleupagus.ini
-	ln -s /etc/php/7.3/mods-available/snuffleupagus.ini /etc/php/7.3/apache2/conf.d/20-snuffleupagus.ini
+	echo "extension=snuffleupagus.so" >> /etc/php/"$PHPVER"/mods-available/snuffleupagus.ini
+	echo "sp.configuration_file=/etc/sentora/configs/php/sp/snuffleupagus.rules" >> /etc/php/"$PHPVER"/mods-available/snuffleupagus.ini
+	ln -s /etc/php/"$PHPVER"/mods-available/snuffleupagus.ini /etc/php/"$PHPVER"/apache2/conf.d/20-snuffleupagus.ini
 		
 fi
 	
@@ -396,7 +413,7 @@ fi
 # prepare daemon crontab
 # sed -i "s|!USER!|$CRON_USER|" "$PANEL_CONF/cron/zdaemon" #it screw update search!#
 rm -rf /etc/cron.d/zdaemon
-cp -r $SENTORA_PRECONF_UPGRADE/preconf/cron/zdaemon /etc/cron.d/zdaemon
+cp -r "$SENTORA_PRECONF_UPGRADE"/preconf/cron/zdaemon /etc/cron.d/zdaemon
 sed -i "s|!USER!|root|" "/etc/cron.d/zdaemon"
 chmod 644 /etc/cron.d/zdaemon
 		
@@ -443,8 +460,8 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sql/2-postfix-unused-tables.sql
 	
 # -------------------------------------------------------------------------------
 # ProFTPd Below
@@ -509,9 +526,9 @@ echo -e "\n--- Updating Snuffleupagus default rules..."
 rm -rf /etc/sentora/configs/php/sp/snuffleupagus.rules
 rm -rf /etc/sentora/configs/php/sp/sentora.rules
 rm -rf /etc/sentora/configs/php/sp/cron.rules
-cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/snuffleupagus.rules /etc/sentora/configs/php/sp/
-cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/sentora.rules /etc/sentora/configs/php/sp/
-cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/cron.rules /etc/sentora/configs/php/sp/
+cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/snuffleupagus.rules /etc/sentora/configs/php/sp/
+cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/sentora.rules /etc/sentora/configs/php/sp/
+cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/cron.rules /etc/sentora/configs/php/sp/
 	
 	
 	
@@ -520,14 +537,14 @@ cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/cron.rules /etc/sentora/configs/php/
 
 # Delete All default core modules for upgrade/updates - There might be a better way to do this.
     ## Removing core for upgrade
-    rm -rf $PANEL_PATH/panel/bin/
-    rm -rf $PANEL_PATH/panel/dryden/
-    rm -rf $PANEL_PATH/panel/etc/
-    rm -rf $PANEL_PATH/panel/inc/
-    rm -rf $PANEL_PATH/panel/index.php
-    rm -rf $PANEL_PATH/panel/LICENSE.md
-    rm -rf $PANEL_PATH/panel/README.md
-    rm -rf $PANEL_PATH/panel/robots.txt
+    # rm -rf $PANEL_PATH/panel/bin/
+    # rm -rf $PANEL_PATH/panel/dryden/
+    # rm -rf $PANEL_PATH/panel/etc/
+    # rm -rf $PANEL_PATH/panel/inc/
+    # rm -rf $PANEL_PATH/panel/index.php
+    # rm -rf $PANEL_PATH/panel/LICENSE.md
+    # rm -rf $PANEL_PATH/panel/README.md
+    # rm -rf $PANEL_PATH/panel/robots.txt
     rm -rf $PANEL_PATH/panel/modules/aliases
     rm -rf $PANEL_PATH/panel/modules/apache_admin
     rm -rf $PANEL_PATH/panel/modules/backup_admin
@@ -557,6 +574,8 @@ cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/cron.rules /etc/sentora/configs/php/
     rm -rf $PANEL_PATH/panel/modules/phpinfo
     rm -rf $PANEL_PATH/panel/modules/phpmyadmin
     rm -rf $PANEL_PATH/panel/modules/phpsysinfo
+	rm -rf $PANEL_PATH/panel/modules/protected_directories
+	rm -rf $PANEL_PATH/panel/modules/sentoraconfig
     rm -rf $PANEL_PATH/panel/modules/services
     rm -rf $PANEL_PATH/panel/modules/shadowing
     rm -rf $PANEL_PATH/panel/modules/sub_domains
@@ -569,7 +588,7 @@ cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/cron.rules /etc/sentora/configs/php/
     rm -rf $PANEL_PATH/panel/modules/zpx_core_module
 
 # Upgrade all modules with new files from master core.
-cp -R $SENTORA_CORE/modules/* $PANEL_PATH/panel/modules/
+cp -R "$SENTORA_CORE_UPGRADE"/modules/* $PANEL_PATH/panel/modules/
 
 # Set all modules to 0777 permissions - Need to fix later.
 chmod -R 0777 $PANEL_PATH/panel/modules/*
@@ -585,19 +604,19 @@ chmod -R 0777 $PANEL_PATH/panel/modules/*
 # Copy New Apache config template files
 echo -e "\n--- Updating Sentora vhost templates..."
 rm -rf /etc/sentora/configs/apache/templates/
-cp -r $SENTORA_PRECONF_UPGRADE/preconf/apache/templates /etc/sentora/configs/apache/
+cp -r "$SENTORA_PRECONF_UPGRADE"/preconf/apache/templates /etc/sentora/configs/apache/
 echo ""
 	
 # install Smarty files
-cp -r $SENTORA_CORE_UPGRADE/etc/lib/smarty /etc/sentora/panel/etc/lib/
+cp -r "$SENTORA_CORE_UPGRADE"/etc/lib/smarty /etc/sentora/panel/etc/lib/
 
 # Replace .htaccess with new file
 rm -r $PANEL_PATH/panel/.htaccess
-cp -r $SENTORA_CORE_UPGRADE/.htaccess $PANEL_PATH/panel/
+cp -r "$SENTORA_CORE_UPGRADE"/.htaccess $PANEL_PATH/panel/
 
 # Replace /inc/init.inc.php with new file
 rm -r $PANEL_PATH/panel/inc/init.inc.php
-cp -r $SENTORA_CORE_UPGRADE/inc/init.inc.php $PANEL_PATH/panel/inc/
+cp -r "$SENTORA_CORE_UPGRADE"/inc/init.inc.php $PANEL_PATH/panel/inc/
 	
 # Update Sentora Core Mysql tables
 # get mysql root password, check it works or ask it
@@ -606,9 +625,9 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/2-postfix-unused-tables.sql
-mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/3-core-update.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/3-core-update.sql
 	
 # Restart apache to set Snuffleupagus
 if [[ "$OS" = "CentOs" ]]; then
@@ -622,7 +641,7 @@ fi
 # -------------------------------------------------------------------------------
 	
 echo -e "\nStarting Roundcube upgrade to 1.3.10..."
-cd $SENTORA_CORE_UPGRADE || exit
+cd "$SENTORA_CORE_UPGRADE" || exit
 wget --no-check-certificate -nv -O roundcubemail-1.3.10.tar.gz https://github.com/roundcube/roundcubemail/releases/download/1.3.10/roundcubemail-1.3.10-complete.tar.gz
 tar xf roundcubemail-*.tar.gz
 cd roundcubemail-1.3.10 || exit
@@ -635,7 +654,7 @@ chown -R root:root /etc/sentora/panel/etc/apps/webmail
 	
 echo -e "\n--- Starting pChart2.4 upgrade..."
 rm -rf /etc/sentora/panel/etc/lib/pChart2/
-cp -r  $SENTORA_CORE_UPGRADE/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
+cp -r  "$SENTORA_CORE_UPGRADE"/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
 	
 # -------------------------------------------------------------------------------
 # Start PHPsysinfo 3.3.1 upgrade Below
@@ -643,7 +662,7 @@ cp -r  $SENTORA_CORE_UPGRADE/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
 	
 echo -e "\nStarting PHPsysinfo upgrade to 3.3.1..."
 rm -rf /etc/sentora/panel/etc/apps/phpsysinfo/
-cp -r  $SENTORA_CORE_UPGRADE/etc/apps/phpsysinfo $PANEL_PATH/panel/etc/apps/
+cp -r  "$SENTORA_CORE_UPGRADE"/etc/apps/phpsysinfo $PANEL_PATH/panel/etc/apps/
 	
 # Setup config file
 mv -f /etc/sentora/panel/etc/apps/phpsysinfo/phpsysinfo.ini.new /etc/sentora/panel/etc/apps/phpsysinfo/phpsysinfo.ini
@@ -660,7 +679,7 @@ passwordgen() {
    	tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
 	
-echo -e "\n-- Configuring phpMyAdmin 4.9..."
+echo -e "\n-- Configuring phpMyAdmin 4.9.2..."
 phpmyadminsecret=$(passwordgen 32);
 	
 #echo "password"
@@ -677,7 +696,7 @@ echo -e -p "Installer is about to upgrade PHPmyadmin to 4.9.2."
 ## START Install here
 					
 #PHPMYADMIN_VERSION="STABLE"
-PHPMYADMIN_VERSION="4.9.2-all-languages"
+#PHPMYADMIN_VERSION="4.9.2-all-languages"
 cd  $PANEL_PATH/panel/etc/apps/ || exit
 														
 # empty folder
@@ -689,14 +708,20 @@ rm -rf /etc/sentora/panel/etc/apps/phpmyadmin
 
 # Download/Get PHPmyadmin 4.9.2
 #wget -nv -O phpmyadmin.zip https://github.com/phpmyadmin/phpmyadmin/archive/$PHPMYADMIN_VERSION.zip				
-cp -r  $SENTORA_CORE_UPGRADE/etc/apps/phpmyadmin.zip phpmyadmin.zip
+cp -r  "$SENTORA_CORE_UPGRADE"/etc/apps/phpmyadmin phpmyadmin
 	
 	
 	
 	
 							
-unzip -q  phpmyadmin.zip
-mv phpMyAdmin-$PHPMYADMIN_VERSION phpmyadmin
+#unzip -q  phpmyadmin.zip
+#mv phpMyAdmin-$PHPMYADMIN_VERSION phpmyadmin
+									
+									
+									
+									
+									
+									
 																	
 cd phpmyadmin || exit							
 cd $PANEL_PATH/panel/etc/apps/ || exit
@@ -735,8 +760,8 @@ php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q $PAN
 # -------------------------------------------------------------------------------
 
 # Clean up files downloaded for install/update
-rm -r $SENTORA_CORE_UPGRADE
-rm -r $SENTORA_PRECONF_UPGRADE
+rm -r "$SENTORA_CORE_UPGRADE"
+rm -r "$SENTORA_PRECONF_UPGRADE"
 
 # Disable PHP 7.1, 7.2, 7.4 package tell we can test. AGAIN to make ubuntu 16.04 didnt override during install(ISSUE)
 if [[ "$OS" = "Ubuntu" ]]; then
