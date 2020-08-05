@@ -35,6 +35,10 @@
 SENTORA_UPDATER_VERSION="1.1.0"
 PANEL_PATH="/etc/sentora"
 PANEL_CONF="/etc/sentora/configs"
+SENTORA_CORE_UPGRADE="~/sentora_core"
+SENTORA_PRECONF_UPGRADE="~/sentora_preconfig"
+
+
 SENTORA_INSTALLED_DBVERSION=$($PANEL_PATH/panel/bin/setso --show dbversion)
 SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
 
@@ -147,99 +151,81 @@ fi
 # ***************************************
 # Installation really starts here
 
-# Install PHP 7.3
-if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
-	if [[ "$VER" = "16.04" || "$VER" = "8" ]]; then
-      
-		# Install PHP 7.3 and install modules
-		#$PACKAGE_INSTALLER php7.3 php7.3-common 
-		#$PACKAGE_INSTALLER php7.3-mysql php7.3-mbstring
-		#$PACKAGE_INSTALLER php7.3-zip php7.3-xml php7.3-gd
-		#$PACKAGE_INSTALLER php7.0-dev libapache2-mod-php7.3
-		#$PACKAGE_INSTALLER php7.3-dev
-		#$PACKAGE_INSTALLER php7.3-curl
-		
-		$PACKAGE_INSTALLER php7.3 php7.3-common php7.3-curl php7.0-dev php7.3-dev php7.3-gd php7.3-mysql php7.3-mbstring php7.3-xml php7.3-zip libapache2-mod-php7.3
-                
-		# PHP Mcrypt 1.0.2 install
-		if [ ! -f /etc/php/7.3/apache2/conf.d/20-mcrypt.ini ]; then
-                        
-			echo -e "\nInstalling php mcrypt 1.0.2"
-			$PACKAGE_INSTALLER gcc make autoconf libc-dev pkg-config
-			$PACKAGE_INSTALLER libmcrypt-dev
-			echo '' | sudo pecl install mcrypt-1.0.2
-			bash -c "echo extension=mcrypt.so > /etc/php/7.3/mods-available/mcrypt.ini"
-			ln -s /etc/php/7.3/mods-available/mcrypt.ini /etc/php/7.3/apache2/conf.d/20-mcrypt.ini
-		fi		
-                
-		# Set PHP 7.3 as system default in case upgrade to PHP 7.4+
-		update-alternatives --set php /usr/bin/php7.3
-                
-		# Enable Apache mod_php7.3
-		a2enmod php7.3  
 
 
-		# Pass php.ini.OLD Date.timezone over to new PHP.ini
-		TIMEZONE=$(cat /etc/php5/apache2/php.ini | grep "date.timezone =" | sed -s "s|.*date.timezone \= '\(.*\)';.*|\1|")
-		sed -i 's|;date.timezone =|'"$TIMEZONE"'|g' /etc/php/7.3/apache2/php.ini
+
+
+
+
+
+
+# Install PHP 7.x
+   
+    if [[ "$OS" = "CentOs" ]]; then
+		if [[ "$VER" = "7" ]]; then
 		
-		# Fix missing php.ini settings sentora needs
-		echo -e "\nFix missing php.ini settings sentora needs in Ubuntu 16.04 php 7.3 ..."
-		echo "setting upload_tmp_dir = /var/sentora/temp/"
-		echo ""
-		sed -i 's|;upload_tmp_dir =|upload_tmp_dir = /var/sentora/temp/|g' /etc/php/7.3/apache2/php.ini
-		echo "Setting session.save_path = /var/sentora/sessions"
-		sed -i 's|;session.save_path = "/var/lib/php/sessions"|session.save_path = "/var/sentora/sessions"|g' /etc/php/7.3/apache2/php.ini
-			  
-	fi 
-            
-	PHP_INI_PATH="/etc/php/7.3/apache2/php.ini"
-            
-elif [[ "$OS" = "CentOs" ]]; then    
-	if [[ "$VER" = "7" ]]; then   
-		PHP_INI_PATH="/etc/php.ini" 
-	      
-		# Install PHP 7.3 and install modules
-		#yum -y install httpd mod_ssl php php-zip php-fpm php-devel php-gd php-imap php-ldap php-mysql php-odbc php-pear php-xml php-xmlrpc php-pecl-apc php-mbstring php-soap php-tidy curl curl-devel perl-libwww-perl ImageMagick libxml2 libxml2-devel mod_fcgid php-cli httpd-devel php-intl php-imagick php-pspell wget        
-                 
-		yum -y --enablerepo=remi-php73 install php php-devel php-gd php-mcrypt php-mysql php-xml php-xmlrpc php-zip
-        
+			echo -e "\n-Installing REMI-repo PHP 7.3 version..."
 		
-		## Setup PHP 7.3 new PHP.INI file shipped with PHP and rename old PHP.INI
-		file="/etc/php.ini.OLD"
-		if [ ! -f "$file" ]; then
-			mv /etc/php.ini /etc/php.ini.OLD
-			cp -r /etc/php.ini.rpmnew $PHP_INI_PATH
+			## Start PHP 7.x install here
+			yum clean all
+			rm -rf /var/cache/yum/*
+			
+			$PACKAGE_INSTALLER yum-utils
+			$PACKAGE_INSTALLER epel-release
+			$PACKAGE_INSTALLER http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+		
+			## Install PHP 7.3 and update modules
+			
+			##yum -y install httpd mod_ssl php php-zip php-fpm php-devel php-gd php-imap php-ldap php-mysql php-odbc php-pear php-xml php-xmlrpc php-pecl-apc php-mbstring php-mcrypt php-soap php-tidy curl curl-devel perl-libwww-perl ImageMagick libxml2 libxml2-devel mod_fcgid php-cli httpd-devel php-intl php-imagick php-pspell wget
+			
+			yum -y --enablerepo=remi-php73 install php php-devel php-gd php-mcrypt php-mysql php-xml php-xmlrpc php-zip
+				
+		elif [[ "$VER" = "8" ]]; then
+			$PACKAGE_INSTALLER php php-devel php-gd php-json php-mbstring php-intl php-mysqlnd php-xml php-xmlrpc php-zip
+			$PACKAGE_INSTALLER libmcrypt libmcrypt-devel php-imap  #Epel packages
+			
+            # Enable Mod_php & Prefork for Apache/PHP 7.3
+            sed -i 's|#LoadModule mpm_prefork_module|LoadModule mpm_prefork_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
+            sed -i 's|LoadModule mpm_event_module|#LoadModule mpm_event_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
+			
 		fi
-	
-		# Pass php.ini.OLD Date.timezone over to new PHP.ini
-		TIMEZONE=$(cat /etc/php.ini.OLD | grep "date.timezone =" | sed -s "s|.*date.timezone \= '\(.*\)';.*|\1|")
-		sed -i 's|;date.timezone =|'"$TIMEZONE"'|g' $PHP_INI_PATH
-	
-		# Fix missing php.ini settings sentora needs
-		echo -e "\nFix missing php.ini settings sentora needs in CentOS 7.x php 7.3 ..."
-		echo "setting upload_tmp_dir = /var/sentora/temp/"
-		echo ""
-		sed -i 's|;upload_tmp_dir =|upload_tmp_dir = /var/sentora/temp/|g' $PHP_INI_PATH
-		echo "Setting session.save_path = /var/sentora/sessions"
-		sed -i 's|;session.save_path = "/tmp"|session.save_path = "/var/sentora/sessions"|g' $PHP_INI_PATH
-		        
+		
+		PHP_INI_PATH="/etc/php.ini"
+        
+	elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+		
+		if [[ "$VER" = "16.04" ]]; then
+			echo -e "\n-Installing OS Default PHP version..."
+			
+			$PACKAGE_INSTALLER libapache2-mod-php7.0 php7.0-common php7.0-cli php7.0-mysql php7.0-gd php7.0-mcrypt php7.0-curl php-pear php7.0-imap php7.0-xmlrpc php7.0-xsl php7.0-intl php-mbstring php7.0-mbstring php-gettext php7.0-dev php7.0-zip
+			
+			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"
+		fi		
 	fi
-fi 	
+
+
+
+
+
+
+
+
+
+
 
 # PHP END
 # -------------------------------------------------------------------------------
 	
-##### Check php 7 was installed or quit installer.
+##### Check php 7.x was installed or quit installer.
 PHPVERFULL=$(php -r 'echo phpversion();')
 PHPVER=${PHPVERFULL:0:3} # return 5.x or 7.x
-
+	
 echo -e "\nDetected PHP: $PHPVER "
 
-if  [[ "$PHPVER" = "7.3" ]]; then
-   	echo -e "\nPHP 7.3 installed. Procced installing ..."
+if  [[ "$PHPVER" == 7.* ]]; then
+	echo -e "\nPHP $PHPVER installed. Procced installing ..."
 else
-	echo -e "\nPHP 7.3 not installed. Exiting installer. Please contact script admin"
+	echo -e "\nPHP 7.x not installed. $PHPVER installed. Exiting installer. Please contact script admin"
 	exit 1
 fi
 	
@@ -323,7 +309,34 @@ upgradedir="$HOME/sentora_php7_upgrade"
 if [ -d "$upgradedir" ]; then
 	rm -r ~/sentora_php7_upgrade
 fi
-git clone https://github.com/Dukecitysolutions/sentora-php7-upgrade sentora_php7_upgrade
+
+
+
+
+
+
+# Get Sentora Installers/Preconf
+wget -nv -O sentora_preconfig.zip https://github.com/Dukecitysolutions/sentora-installers-dev/archive/master.zip
+
+#echo -e "\n--- Unzipping Preconf files..."
+unzip -oq sentora_preconfig.zip
+rm -r sentora_preconfig.zip
+
+# Get Sentora core files
+wget -nv -O sentora_core.zip https://github.com/Dukecitysolutions/sentora-core-dev/archive/master.zip
+
+#echo -e "\n--- Unzipping core files..."
+unzip -oq sentora_core.zip
+rm -r sentora_core.zip
+
+
+
+
+
+
+
+
+
 	
 # mkdir -p sentora_php7_upgrade
 # cd sentora_php7_upgrade
@@ -352,43 +365,29 @@ if [[ "$OS" = "CentOs" && ("$VER" = "7") ]]; then
 	
 fi	
 	
+	
+	
+
 # Fix Ubuntu 16.04 DNS 
 if [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 	
-	# Ubuntu DNS fix now starting fix
-	# Update Snuff Default rules to fix panel timeout
-	echo -e "\nUpdating Ubuntu DNS fix..."
-	rm -rf /etc/apparmor.d/usr.sbin.named
-	cp -r  ~/sentora_php7_upgrade/preconf/apparmor.d/usr.sbin.named /etc/apparmor.d/
-	#chown -R root:root /etc/apparmor.d/usr.sbin.named 
-	#chmod 0644 /etc/apparmor.d/usr.sbin.named 
-		
-	if ! grep -q "managed-keys-directory" /etc/bind/named.conf; then
-		echo -e "\nUpdating named.conf with managed-keys-directory for Ubuntu 16 & 18\n"
-		sed -i '\~dnssec-lookaside auto;~a   managed-keys-directory "/var/named/dynamic";' /etc/bind/named.conf
-			
-		# Delete Default empty managed-keys.bind.jnl file
-		rm -rf /var/named/dynamic/managed-keys.bind
-					
+	# Ubuntu 16.04-20.04 Bind9 Fixes 
+	if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+		if [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then
+			# Disable Bind9(Named) from Apparmor. Apparmor reinstalls with apps(MySQL & Bind9) for some reason.
+			ln -s /etc/apparmor.d/usr.sbin.named /etc/apparmor.d/disable/
+			apparmor_parser -R /etc/apparmor.d/usr.sbin.named
+		fi
 	fi
 
 	# Set bind log in DB missing in Sentora installer
 	$PANEL_PATH/panel/bin/setso --set bind_log "/var/sentora/logs/bind/bind.log"
 
-	# DELETING maybe or using later ################
-	# DNS now starting fix
-	#file="/etc/apparmor.d/usr.sbin.named"
-	#TARGET_STRING="/etc/sentora/configs/bind/etc/** rw,"
-	#grep -q $TARGET_STRING $file
-	#if [ ! $? -eq 0 ]
-	#	then
-   	#		echo "Apparmor does not include DNS fix. Updating..."
-   	#	sed -i '\~/var/cache/bind/ rw,~a   /etc/sentora/configs/bind/etc/** rw,' /etc/apparmor.d/usr.sbin.named
-	#	sed -i '\~/var/cache/bind/ rw,~a   /var/sentora/logs/bind/** rw,' /etc/apparmor.d/usr.sbin.named
-	#fi
-	###############################
-
 fi	
+	
+	
+	
+	
 	
 # -------------------------------------------------------------------------------
 # CRON Below
@@ -397,7 +396,7 @@ fi
 # prepare daemon crontab
 # sed -i "s|!USER!|$CRON_USER|" "$PANEL_CONF/cron/zdaemon" #it screw update search!#
 rm -rf /etc/cron.d/zdaemon
-cp -r ~/sentora_php7_upgrade/preconf/cron/zdaemon /etc/cron.d/zdaemon
+cp -r $SENTORA_PRECONF_UPGRADE/preconf/cron/zdaemon /etc/cron.d/zdaemon
 sed -i "s|!USER!|root|" "/etc/cron.d/zdaemon"
 chmod 644 /etc/cron.d/zdaemon
 		
@@ -430,14 +429,11 @@ fi
 # -------------------------------------------------------------------------------
 	
 # Fix postfix not working after upgrade to 16.04
-if [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
-	echo -e "\nFixing postfix not working after upgrade to 16.04..."
-		
-	# disable postfix daemon_directory for now to allow startup after update
-	sed -i 's|daemon_directory = /usr/lib/postfix|#daemon_directory = /usr/lib/postfix|g' /etc/sentora/configs/postfix/main.cf
-				
-	systemctl restart postfix
-		
+# Edit deamon_directory in postfix main.cf to fix startup issue.
+if [[ "$OS" = "Ubuntu" ]]; then
+	if [[ "$VER" = "16.04" ]]; then
+		sed -i "s|daemon_directory = /usr/lib/postfix|daemon_directory = /usr/lib/postfix/sbin|" $PANEL_CONF/postfix/main.cf
+	fi
 fi
 	
 # Update/alter Postfix table from MYISAM to INNODB
@@ -447,8 +443,8 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < ~/sentora_php7_upgrade/preconf/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < ~/sentora_php7_upgrade/preconf/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sql/2-postfix-unused-tables.sql
 	
 # -------------------------------------------------------------------------------
 # ProFTPd Below
@@ -513,89 +509,95 @@ echo -e "\n--- Updating Snuffleupagus default rules..."
 rm -rf /etc/sentora/configs/php/sp/snuffleupagus.rules
 rm -rf /etc/sentora/configs/php/sp/sentora.rules
 rm -rf /etc/sentora/configs/php/sp/cron.rules
-cp -r  ~/sentora_php7_upgrade/preconf/php/snuffleupagus.rules /etc/sentora/configs/php/sp/
-cp -r  ~/sentora_php7_upgrade/preconf/php/sentora.rules /etc/sentora/configs/php/sp/
-cp -r  ~/sentora_php7_upgrade/preconf/php/cron.rules /etc/sentora/configs/php/sp/
+cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/snuffleupagus.rules /etc/sentora/configs/php/sp/
+cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/sentora.rules /etc/sentora/configs/php/sp/
+cp -r  $SENTORA_PRECONF_UPGRADE/preconf/php/cron.rules /etc/sentora/configs/php/sp/
 	
-# Upgrade apache_admin with apache_admin 1.0.x
-echo -e "\n--- Updating Apache_admin module..."
-rm -rf /etc/sentora/panel/modules/apache_admin/
-cp -r  ~/sentora_php7_upgrade/modules/apache_admin $PANEL_PATH/panel/modules/
-		
-# Set new sentora panel logs dir
-#mkdir -p /var/sentora/logs/panel
-		
-# Upgrade cron module 1.0.x
-echo -e "\n--- Updating Cron module..."
-rm -rf /etc/sentora/panel/modules/cron/
-cp -r  ~/sentora_php7_upgrade/modules/cron $PANEL_PATH/panel/modules/
-		
-# Upgrade dns_admin module 1.0.x
-echo -e "\n--- Updating Dns_Admin module..."
-rm -rf /etc/sentora/panel/modules/dns_admin/
-cp -r  ~/sentora_php7_upgrade/modules/dns_admin $PANEL_PATH/panel/modules/
-		
-# Upgrade dns_manager module 1.0.x
-echo -e "\n--- Updating Dns_Manager module..."
-rm -rf /etc/sentora/panel/modules/dns_manager/
-cp -r  ~/sentora_php7_upgrade/modules/dns_manager $PANEL_PATH/panel/modules/
 	
-# Upgrade domains_module to 1.0.x
-echo -e "\n--- Updating Domains module..."
-rm -rf /etc/sentora/panel/modules/domains/
-cp -r  ~/sentora_php7_upgrade/modules/domains $PANEL_PATH/panel/modules/
 	
-# Upgrade ftp_management module 1.0.x
-echo -e "\n--- Updating FTP_management module..."
-rm -rf /etc/sentora/panel/modules/ftp_management/
-cp -r  ~/sentora_php7_upgrade/modules/ftp_management $PANEL_PATH/panel/modules/
+
+
+
+# Delete All default core modules for upgrade/updates - There might be a better way to do this.
+    ## Removing core for upgrade
+    rm -rf $PANEL_PATH/panel/bin/
+    rm -rf $PANEL_PATH/panel/dryden/
+    rm -rf $PANEL_PATH/panel/etc/
+    rm -rf $PANEL_PATH/panel/inc/
+    rm -rf $PANEL_PATH/panel/index.php
+    rm -rf $PANEL_PATH/panel/LICENSE.md
+    rm -rf $PANEL_PATH/panel/README.md
+    rm -rf $PANEL_PATH/panel/robots.txt
+    rm -rf $PANEL_PATH/panel/modules/aliases
+    rm -rf $PANEL_PATH/panel/modules/apache_admin
+    rm -rf $PANEL_PATH/panel/modules/backup_admin
+    rm -rf $PANEL_PATH/panel/modules/backupmgr
+    rm -rf $PANEL_PATH/panel/modules/client_notices
+    rm -rf $PANEL_PATH/panel/modules/cron
+    rm -rf $PANEL_PATH/panel/modules/distlists
+    rm -rf $PANEL_PATH/panel/modules/dns_admin
+    rm -rf $PANEL_PATH/panel/modules/dns_manager
+    rm -rf $PANEL_PATH/panel/modules/domains
+    rm -rf $PANEL_PATH/panel/modules/faqs
+    rm -rf $PANEL_PATH/panel/modules/forwarders
+    rm -rf $PANEL_PATH/panel/modules/ftp_admin
+    rm -rf $PANEL_PATH/panel/modules/ftp_management
+    rm -rf $PANEL_PATH/panel/modules/mail_admin
+    rm -rf $PANEL_PATH/panel/modules/mailboxes
+    rm -rf $PANEL_PATH/panel/modules/manage_clients
+    rm -rf $PANEL_PATH/panel/modules/manage_groups
+    rm -rf $PANEL_PATH/panel/modules/moduleadmin
+    rm -rf $PANEL_PATH/panel/modules/my_account
+    rm -rf $PANEL_PATH/panel/modules/mysql_databases
+    rm -rf $PANEL_PATH/panel/modules/mysql_users
+    rm -rf $PANEL_PATH/panel/modules/news
+    rm -rf $PANEL_PATH/panel/modules/packages
+    rm -rf $PANEL_PATH/panel/modules/parked_domains
+    rm -rf $PANEL_PATH/panel/modules/password_assistant
+    rm -rf $PANEL_PATH/panel/modules/phpinfo
+    rm -rf $PANEL_PATH/panel/modules/phpmyadmin
+    rm -rf $PANEL_PATH/panel/modules/phpsysinfo
+    rm -rf $PANEL_PATH/panel/modules/services
+    rm -rf $PANEL_PATH/panel/modules/shadowing
+    rm -rf $PANEL_PATH/panel/modules/sub_domains
+    rm -rf $PANEL_PATH/panel/modules/theme_manager
+    rm -rf $PANEL_PATH/panel/modules/updates
+    rm -rf $PANEL_PATH/panel/modules/usage_viewer
+    rm -rf $PANEL_PATH/panel/modules/webalizer_stats
+    rm -rf $PANEL_PATH/panel/modules/webmail
+    rm -rf $PANEL_PATH/panel/modules/zpanelconfig
+    rm -rf $PANEL_PATH/panel/modules/zpx_core_module
+
+# Upgrade all modules with new files from master core.
+cp -R $SENTORA_CORE/modules/* $PANEL_PATH/panel/modules/
+
+# Set all modules to 0777 permissions - Need to fix later.
+chmod -R 0777 $PANEL_PATH/panel/modules/*
+
+
+
+
 	
-# Upgrade mailboxes module 1.0.x
-echo -e "\n--- Updating Mailboxes module..."
-rm -rf /etc/sentora/panel/modules/mailboxes/
-cp -r  ~/sentora_php7_upgrade/modules/mailboxes $PANEL_PATH/panel/modules/
 	
-# Upgrade mysql_databases module 1.0.x
-echo -e "\n--- Updating Mysql_databases module..."
-rm -rf /etc/sentora/panel/modules/mysql_databases/
-cp -r  ~/sentora_php7_upgrade/modules/mysql_databases $PANEL_PATH/panel/modules/
 	
-# Upgrade mysql_users module 1.0.x
-echo -e "\n--- Updating Mysql_users module..."
-rm -rf /etc/sentora/panel/modules/mysql_users/
-cp -r  ~/sentora_php7_upgrade/modules/mysql_users $PANEL_PATH/panel/modules/
 	
-# Upgrade parked_Domains module 1.0.x
-echo -e "\n--- Updating Parked_Domains module..."
-rm -rf /etc/sentora/panel/modules/parked_domains/
-cp -r  ~/sentora_php7_upgrade/modules/parked_domains $PANEL_PATH/panel/modules/
-	
-# Upgrade Sub_Domains module 1.0.x
-echo -e "\n--- Updating Sub_Domains module..."
-rm -rf /etc/sentora/panel/modules/sub_domains/
-cp -r  ~/sentora_php7_upgrade/modules/sub_domains $PANEL_PATH/panel/modules/
-	
-# Upgrade Usage_viewer module 1.0.x
-echo -e "\n--- Updating Usage_viewer module..."
-rm -rf /etc/sentora/panel/modules/usage_viewer/
-cp -r  ~/sentora_php7_upgrade/modules/usage_viewer $PANEL_PATH/panel/modules/
 	
 # Copy New Apache config template files
 echo -e "\n--- Updating Sentora vhost templates..."
 rm -rf /etc/sentora/configs/apache/templates/
-cp -r ~/sentora_php7_upgrade/preconf/apache/templates /etc/sentora/configs/apache/
+cp -r $SENTORA_PRECONF_UPGRADE/preconf/apache/templates /etc/sentora/configs/apache/
 echo ""
 	
 # install Smarty files
-cp -r ~/sentora_php7_upgrade/etc/lib/smarty /etc/sentora/panel/etc/lib/
+cp -r $SENTORA_CORE_UPGRADE/etc/lib/smarty /etc/sentora/panel/etc/lib/
 
 # Replace .htaccess with new file
 rm -r $PANEL_PATH/panel/.htaccess
-cp -r ~/sentora_php7_upgrade/.htaccess $PANEL_PATH/panel/
+cp -r $SENTORA_CORE_UPGRADE/.htaccess $PANEL_PATH/panel/
 
 # Replace /inc/init.inc.php with new file
 rm -r $PANEL_PATH/panel/inc/init.inc.php
-cp -r ~/sentora_php7_upgrade/inc/init.inc.php $PANEL_PATH/panel/inc/
+cp -r $SENTORA_CORE_UPGRADE/inc/init.inc.php $PANEL_PATH/panel/inc/
 	
 # Update Sentora Core Mysql tables
 # get mysql root password, check it works or ask it
@@ -604,7 +606,9 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < ~/sentora_php7_upgrade/preconf/sql/sentora_1_0_3_1.sql
+mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < $SENTORA_PRECONF_UPGRADE/preconf/sentora-update/sql/3-core-update.sql
 	
 # Restart apache to set Snuffleupagus
 if [[ "$OS" = "CentOs" ]]; then
@@ -618,7 +622,7 @@ fi
 # -------------------------------------------------------------------------------
 	
 echo -e "\nStarting Roundcube upgrade to 1.3.10..."
-cd ~/sentora_php7_upgrade || exit
+cd $SENTORA_CORE_UPGRADE || exit
 wget --no-check-certificate -nv -O roundcubemail-1.3.10.tar.gz https://github.com/roundcube/roundcubemail/releases/download/1.3.10/roundcubemail-1.3.10-complete.tar.gz
 tar xf roundcubemail-*.tar.gz
 cd roundcubemail-1.3.10 || exit
@@ -631,7 +635,7 @@ chown -R root:root /etc/sentora/panel/etc/apps/webmail
 	
 echo -e "\n--- Starting pChart2.4 upgrade..."
 rm -rf /etc/sentora/panel/etc/lib/pChart2/
-cp -r  ~/sentora_php7_upgrade/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
+cp -r  $SENTORA_CORE_UPGRADE/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
 	
 # -------------------------------------------------------------------------------
 # Start PHPsysinfo 3.3.1 upgrade Below
@@ -639,7 +643,7 @@ cp -r  ~/sentora_php7_upgrade/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
 	
 echo -e "\nStarting PHPsysinfo upgrade to 3.3.1..."
 rm -rf /etc/sentora/panel/etc/apps/phpsysinfo/
-cp -r  ~/sentora_php7_upgrade/etc/apps/phpsysinfo $PANEL_PATH/panel/etc/apps/
+cp -r  $SENTORA_CORE_UPGRADE/etc/apps/phpsysinfo $PANEL_PATH/panel/etc/apps/
 	
 # Setup config file
 mv -f /etc/sentora/panel/etc/apps/phpsysinfo/phpsysinfo.ini.new /etc/sentora/panel/etc/apps/phpsysinfo/phpsysinfo.ini
@@ -685,7 +689,7 @@ rm -rf /etc/sentora/panel/etc/apps/phpmyadmin
 
 # Download/Get PHPmyadmin 4.9.2
 #wget -nv -O phpmyadmin.zip https://github.com/phpmyadmin/phpmyadmin/archive/$PHPMYADMIN_VERSION.zip				
-cp -r  ~/sentora_php7_upgrade/etc/apps/phpmyadmin.zip phpmyadmin.zip
+cp -r  $SENTORA_CORE_UPGRADE/etc/apps/phpmyadmin.zip phpmyadmin.zip
 	
 	
 	
@@ -731,7 +735,8 @@ php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q $PAN
 # -------------------------------------------------------------------------------
 
 # Clean up files downloaded for install/update
-rm -r ~/sentora_php7_upgrade
+rm -r $SENTORA_CORE_UPGRADE
+rm -r $SENTORA_PRECONF_UPGRADE
 
 # Disable PHP 7.1, 7.2, 7.4 package tell we can test. AGAIN to make ubuntu 16.04 didnt override during install(ISSUE)
 if [[ "$OS" = "Ubuntu" ]]; then
