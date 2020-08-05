@@ -205,16 +205,20 @@ fi
 			
 			$PACKAGE_INSTALLER libapache2-mod-php7.0 php7.0-common php7.0-cli php7.0-mysql php7.0-gd php7.0-mcrypt php7.0-curl php-pear php7.0-imap php7.0-xmlrpc php7.0-xsl php7.0-intl php-mbstring php7.0-mbstring php-gettext php7.0-dev php7.0-zip
 			
+			# Fix missing php.ini settings sentora needs
+			echo -e "\n--- Fix missing php.ini settings sentora needs in Ubuntu 16.04 php 7.0 ..."
+			echo "setting upload_tmp_dir = /var/sentora/temp/"
+			echo ""
+			sed -i 's|;upload_tmp_dir =|upload_tmp_dir = /var/sentora/temp/|g' /etc/php/7.0/apache2/php.ini
+			echo "Setting session.save_path = /var/sentora/sessions"
+			sed -i 's|;session.save_path = "/var/lib/php/sessions"|session.save_path = "/var/sentora/sessions"|g' /etc/php/7.0/apache2/php.ini
+			
 			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"
 			
 			# Enable Apache mod_php7.0
 			sudo a2enmod php7.0
 		fi		
 	fi
-
-
-
-
 
 
 
@@ -636,17 +640,32 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	systemctl restart apache2
 fi
 		
+		
+		
+		
+		
 # -------------------------------------------------------------------------------
-# Start Roundcube-1.3.10 upgrade Below
+# Start Roundcube-1.4.4 upgrade Below
 # -------------------------------------------------------------------------------
 	
-echo -e "\nStarting Roundcube upgrade to 1.3.10..."
-cd "$SENTORA_CORE_UPGRADE" || exit
-wget --no-check-certificate -nv -O roundcubemail-1.3.10.tar.gz https://github.com/roundcube/roundcubemail/releases/download/1.3.10/roundcubemail-1.3.10-complete.tar.gz
-tar xf roundcubemail-*.tar.gz
-cd roundcubemail-1.3.10 || exit
-bin/installto.sh /etc/sentora/panel/etc/apps/webmail/
-chown -R root:root /etc/sentora/panel/etc/apps/webmail
+echo -e "\n--- Starting Roundcube upgrade to 1.4.4..."
+
+
+# cd "$SENTORA_CORE_UPGRADE" || exit
+# wget --no-check-certificate -nv -O roundcubemail-1.3.10.tar.gz https://github.com/roundcube/roundcubemail/releases/download/1.3.10/roundcubemail-1.3.10-complete.tar.gz
+# tar xf roundcubemail-*.tar.gz
+# cd roundcubemail-1.3.10 || exit
+# bin/installto.sh /etc/sentora/panel/etc/apps/webmail/
+# chown -R root:root /etc/sentora/panel/etc/apps/webmail
+
+################## NEW CODE
+# Map config file in roundcube with symbolic links
+ln -s $PANEL_CONF/roundcube/roundcube_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/config/config.inc.php
+ln -s $PANEL_CONF/roundcube/sieve_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/plugins/managesieve/config.inc.php
+
+
+
+
 
 # -------------------------------------------------------------------------------
 # Start pChart2.4 w/PHP 7 support upgrade Below
