@@ -41,11 +41,6 @@ SENTORA_UPDATER_VERSION="1.1.0" - PRODUCTION READY
 SENTORA_PRECONF_VERSION="dev-master"
 SENTORA_CORE_VERSION="dev-master"
 
-
-
-
-
-
 PANEL_PATH="/etc/sentora"
 PANEL_CONF="/etc/sentora/configs"
 SENTORA_CORE_UPGRADE="$HOME/sentora-core-$SENTORA_PRECONF_VERSION"
@@ -68,7 +63,7 @@ SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
 #--- Display the 'welcome' splash/user warning info..
 echo ""
 echo "############################################################################################"
-echo "#  Welcome to the Official Sentora Upgrader v.$SENTORA_UPGRADER_VERSION					 #"
+echo "#  Welcome to the Official Sentora Upgrader v.$SENTORA_UPDATER_VERSION					 #"
 echo "############################################################################################"
 echo ""
 echo -e "\n- Checking that minimal requirements are ok"
@@ -132,9 +127,24 @@ if [[ "$OS" = "CentOs" ]] ; then
 		PACKAGE_REMOVER="yum -y -q remove"
 	fi
 	
+		if  [[ "$VER" = "7" || "$VER" = "8" ]]; then
+			DB_PCKG="mariadb" &&  echo "DB server will be mariaDB"
+		else 
+			DB_PCKG="mysql" && echo "DB server will be mySQL"
+		fi
+		HTTP_PCKG="httpd"
+		PHP_PCKG="php"
+		BIND_PCKG="bind"
+	
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
     PACKAGE_INSTALLER="apt-get -yqq install"
     PACKAGE_REMOVER="apt-get -yqq remove"  
+	
+	DB_PCKG="mysql-server"
+    HTTP_PCKG="apache2"
+    PHP_PCKG="apache2-mod-php5"
+    BIND_PCKG="bind9"
+	
 fi
 
 # Setup repos for each OS ARCH
@@ -163,11 +173,6 @@ fi
 
 # ***************************************
 # Installation really starts here
-
-
-
-
-
 
 # Install PHP 7.x
    
@@ -220,12 +225,6 @@ fi
 		fi		
 	fi
 
-
-
-
-
-
-
 # PHP END
 # -------------------------------------------------------------------------------
 	
@@ -245,6 +244,8 @@ fi
 # -------------------------------------------------------------------------------
 # Start Snuffleupagus v.0.5.x install Below
 # -------------------------------------------------------------------------------
+	
+echo -e "\n--- Installing Snuffleupagus..."
 	
 # Install Snuffleupagus
 # Install git
@@ -332,32 +333,19 @@ if [ -d "$upgradedir" ]; then
 fi
 
 
-
-
-
-
 # Get Sentora Installers/Preconf
 wget -nv -O sentora_preconfig.zip https://github.com/Dukecitysolutions/sentora-installers-dev/archive/master.zip
 
-#echo -e "\n--- Unzipping Preconf files..."
+echo -e "\n--- Unzipping Preconf files..."
 unzip -oq sentora_preconfig.zip
 rm -r sentora_preconfig.zip
 
 # Get Sentora core files
 wget -nv -O sentora_core.zip https://github.com/Dukecitysolutions/sentora-core-dev/archive/master.zip
 
-#echo -e "\n--- Unzipping core files..."
+echo -e "\n--- Unzipping core files..."
 unzip -oq sentora_core.zip
 rm -r sentora_core.zip
-
-
-
-
-
-
-
-
-
 	
 # mkdir -p sentora_php7_upgrade
 # cd sentora_php7_upgrade
@@ -369,6 +357,8 @@ rm -r sentora_core.zip
 # -------------------------------------------------------------------------------
 # BIND/NAMED DNS Below
 # -------------------------------------------------------------------------------
+	
+echo -e "\n--- Setting up Bind9..."
 	
 # reset home dir for commands
 cd ~ || exit
@@ -386,9 +376,6 @@ if [[ "$OS" = "CentOs" && ("$VER" = "7") ]]; then
 	
 fi	
 	
-	
-	
-
 # Fix Ubuntu 16.04 DNS 
 if [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 	
@@ -406,16 +393,14 @@ if [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 
 fi	
 	
-	
-	
-	
-	
 # -------------------------------------------------------------------------------
 # CRON Below
 # -------------------------------------------------------------------------------
 	
+echo -e "\n--- Setting up Cron..."
+	
 # prepare daemon crontab
-# sed -i "s|!USER!|$CRON_USER|" "$PANEL_CONF/cron/zdaemon" #it screw update search!#
+# sed -i "s|!USER!|$CRON_USER|" "$PANEL_CONF"/cron/zdaemon #it screw update search!#
 rm -rf /etc/cron.d/zdaemon
 cp -r "$SENTORA_PRECONF_UPGRADE"/preconf/cron/zdaemon /etc/cron.d/zdaemon
 sed -i "s|!USER!|root|" "/etc/cron.d/zdaemon"
@@ -449,6 +434,8 @@ fi
 # POSTFIX Below
 # -------------------------------------------------------------------------------
 	
+echo -e "\n--- Setting up Postfix..."
+	
 # Fix postfix not working after upgrade to 16.04
 # Edit deamon_directory in postfix main.cf to fix startup issue.
 if [[ "$OS" = "Ubuntu" ]]; then
@@ -464,12 +451,15 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/0-postfix-datetime-fix.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/2-postfix-unused-tables.sql
 	
 # -------------------------------------------------------------------------------
 # ProFTPd Below
 # -------------------------------------------------------------------------------
+
+echo -e "\n--- Setting up Proftpd..."
 
 if [[ "$OS" = "CentOs" && ("$VER" = "7") ]]; then
 	echo -e "\n-- Installing ProFTPD if not installed"
@@ -519,12 +509,15 @@ fi
 # Start
 # -------------------------------------------------------------------------------
 
-# ####### start here   Upgrade __autoloader() to x__autoloader()
-# rm -rf $PANEL_PATH/panel/dryden/loader.inc.php
-# cd 
-# cp -r /sentora_update/loader.inc.php $PANEL_PATH/panel/dryden/
-sed -i 's/__autoload/x__autoload/g' /etc/sentora/panel/dryden/loader.inc.php
-	
+echo -e "\n--- Updating Sentora Core files..."
+
+# Upgrade Sentora Dryden files
+rm -rf $PANEL_PATH/panel/dryden
+cp -R "$SENTORA_CORE_UPGRADE"/dryden $PANEL_PATH/panel/
+
+# Set Dryden to 0777 permissions
+chmod -R 0777 $PANEL_PATH/panel/dryden
+
 # Update Snuffleupagus Default rules to current
 echo -e "\n--- Updating Snuffleupagus default rules..."
 rm -rf /etc/sentora/configs/php/sp/snuffleupagus.rules
@@ -534,12 +527,7 @@ cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/snuffleupagus.rules /etc/sentor
 cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/sentora.rules /etc/sentora/configs/php/sp/
 cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/cron.rules /etc/sentora/configs/php/sp/
 	
-	
-	
-
-
-
-# Delete All default core modules for upgrade/updates - There might be a better way to do this.
+# Delete All Default core modules for upgrade/updates. Leave Third-party - There might be a better way to do this.
     ## Removing core for upgrade
     # rm -rf $PANEL_PATH/panel/bin/
     # rm -rf $PANEL_PATH/panel/dryden/
@@ -611,7 +599,7 @@ rm -rf /etc/sentora/configs/apache/templates/
 cp -r "$SENTORA_PRECONF_UPGRADE"/preconf/apache/templates /etc/sentora/configs/apache/
 echo ""
 	
-# install Smarty files
+# Install Smarty files
 cp -r "$SENTORA_CORE_UPGRADE"/etc/lib/smarty /etc/sentora/panel/etc/lib/
 
 # Replace .htaccess with new file
@@ -629,20 +617,14 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/2-postfix-unused-tables.sql
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/3-core-update.sql
 	
-# Restart apache to set Snuffleupagus
+# Restart Apache to set Snuffleupagus
 if [[ "$OS" = "CentOs" ]]; then
 	service httpd restart
 elif [[ "$OS" = "Ubuntu" ]]; then
 	systemctl restart apache2
 fi
-		
-		
-		
-		
 		
 # -------------------------------------------------------------------------------
 # Start Roundcube-1.4.4 upgrade Below
@@ -650,22 +632,15 @@ fi
 	
 echo -e "\n--- Starting Roundcube upgrade to 1.4.4..."
 
-
-# cd "$SENTORA_CORE_UPGRADE" || exit
-# wget --no-check-certificate -nv -O roundcubemail-1.3.10.tar.gz https://github.com/roundcube/roundcubemail/releases/download/1.3.10/roundcubemail-1.3.10-complete.tar.gz
-# tar xf roundcubemail-*.tar.gz
-# cd roundcubemail-1.3.10 || exit
-# bin/installto.sh /etc/sentora/panel/etc/apps/webmail/
-# chown -R root:root /etc/sentora/panel/etc/apps/webmail
-
 ################## NEW CODE
+# Install Roundcube
+cd $PANEL_PATH/panel/etc/apps
+cp -R $SENTORA_CORE_UPGRADE/etc/apps/webmail webmail
+chown -R root:root /etc/sentora/panel/etc/apps/webmail
+
 # Map config file in roundcube with symbolic links
 ln -s $PANEL_CONF/roundcube/roundcube_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/config/config.inc.php
 ln -s $PANEL_CONF/roundcube/sieve_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/plugins/managesieve/config.inc.php
-
-
-
-
 
 # -------------------------------------------------------------------------------
 # Start pChart2.4 w/PHP 7 support upgrade Below
@@ -717,64 +692,39 @@ echo -e -p "Installer is about to upgrade PHPmyadmin to 4.9.2."
 #PHPMYADMIN_VERSION="STABLE"
 #PHPMYADMIN_VERSION="4.9.2-all-languages"
 cd  $PANEL_PATH/panel/etc/apps/ || exit
-														
-# empty folder
-rm -rf /etc/sentora/panel/etc/apps/phpmyadmin
-						
-						
-						
-						
 
-# Download/Get PHPmyadmin 4.9.2
-#wget -nv -O phpmyadmin.zip https://github.com/phpmyadmin/phpmyadmin/archive/$PHPMYADMIN_VERSION.zip				
-cp -r  "$SENTORA_CORE_UPGRADE"/etc/apps/phpmyadmin phpmyadmin
+rm -rf $PANEL_PATH/panel/etc/apps/phpmyadmin																						
+cp -r "$SENTORA_CORE_UPGRADE"/etc/apps/phpmyadmin phpmyadmin
 	
-	
-	
-	
-							
-#unzip -q  phpmyadmin.zip
-#mv phpMyAdmin-$PHPMYADMIN_VERSION phpmyadmin
-									
-									
-									
-									
-									
-									
 																	
 cd phpmyadmin || exit							
 cd $PANEL_PATH/panel/etc/apps/ || exit
 chmod -R 777 phpmyadmin
 chown -R "$HTTP_USER":"$HTTP_USER" phpmyadmin
 							
-mv $PANEL_PATH/panel/etc/apps/phpmyadmin_old/robots.txt phpmyadmin/robots.txt
-                       	
+
 mkdir -p /etc/sentora/panel/etc/apps/phpmyadmin/tmp
 chmod -R 777 /etc/sentora/panel/etc/apps/phpmyadmin/tmp
 ln -s $PANEL_CONF/phpmyadmin/config.inc.php $PANEL_PATH/panel/etc/apps/phpmyadmin/config.inc.php
 chmod 644 $PANEL_CONF/phpmyadmin/config.inc.php
-sed -i "s|\$cfg\['blowfish_secret'\] \= '.*';|\$cfg\['blowfish_secret'\] \= '$phpmyadminsecret';|" $PANEL_CONF/phpmyadmin/config.inc.php
+#sed -i "s|\$cfg\['blowfish_secret'\] \= '.*';|\$cfg\['blowfish_secret'\] \= '$phpmyadminsecret';|" $PANEL_CONF/phpmyadmin/config.inc.php
 
 # Remove phpMyAdmin's setup folders in case they were left behind.
-rm -rf phpmyadmin/setup
-rm -rf phpmyadmin/sql
-rm -rf phpmyadmin/test
-rm -rf phpmyadmin.zip
-#rm -rf phpmyadmin_old
+
 
 # -------------------------------------------------------------------------------
-	
 # Update Sentora APACHE_CHANGED, DBVERSION and run DAEMON
+# -------------------------------------------------------------------------------
+
+# Set dbversion
+$PANEL_PATH/panel/bin/setso --set dbversion "$SENTORA_UPDATER_VERSION"
 
 # Set apache daemon to build vhosts file.
 $PANEL_PATH/panel/bin/setso --set apache_changed "true"
 	
-# Set dbversion
-y
- dbversion "$SENTORA_UPDATER_VERSION"
-	
 # Run Daemon
 php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q $PANEL_PATH/panel/bin/daemon.php		
+echo ""
 	
 # -------------------------------------------------------------------------------
 
@@ -789,6 +739,15 @@ if [[ "$OS" = "Ubuntu" ]]; then
 	sudo apt-mark hold php7.4
 fi
 
+#--- Restart all services to capture output messages, if any
+if [[ "$OS" = "CentOs" && "$VER" == "7" || "$VER" == "8" ]]; then
+    # CentOs7 does not return anything except redirection to systemctl :-(
+    service() {
+       echo "Restarting $1"
+       systemctl restart "$1.service"
+    }
+fi
+
 service "$DB_SERVICE" restart
 service "$HTTP_SERVICE" restart
 service postfix restart
@@ -800,9 +759,8 @@ service atd restart
 
 # -------------------------------------------------------------------------------
 
-echo -e "\nDone updating all Sentora_core and PHP 7.3 files"
-echo -e "\nEnjoy and have fun testing!"
-echo -e "\nWe are done upgrading Sentora 1.0.3 - PHP 5.* w/Suhosin to PHP 7.3 w/Snuffleupagus"
+echo -e "\nDone updating all Sentora_core and PHP 7.x files"
+echo -e "\nWe are done upgrading Sentora v1.0.3 to Sentora v1.1.0 w/PHP 7.x support\n"
 
 # Wait until the user have read before restarts the server...
 if [[ "$INSTALL" != "auto" ]] ; then
