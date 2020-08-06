@@ -17,9 +17,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Supported Operating Systems: 
-# CentOS 7.*/8.* Minimal, 
-# Ubuntu server 16.04/18.04/20.04 
-# Debian 9.*/10.* 
+# CentOS 7.*/ Minimal, 
+# Ubuntu server 16.04  
 # 32bit and 64bit
 #
 # Contributions from:
@@ -37,7 +36,7 @@
 # master - latest unstable
 # 1.0.3 - example stable tag
 ##
-SENTORA_UPDATER_VERSION="1.1.0" - PRODUCTION READY
+SENTORA_UPDATER_VERSION="1.1.0" # PRODUCTION READY
 SENTORA_PRECONF_VERSION="dev-master"
 SENTORA_CORE_VERSION="dev-master"
 
@@ -63,7 +62,7 @@ SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
 #--- Display the 'welcome' splash/user warning info..
 echo ""
 echo "############################################################################################"
-echo "#  Welcome to the Official Sentora Upgrader v.$SENTORA_UPDATER_VERSION					 #"
+echo "#  Welcome to the Official Sentora Upgrader v."$SENTORA_UPDATER_VERSION"					 #"
 echo "############################################################################################"
 echo ""
 echo -e "\n- Checking that minimal requirements are ok"
@@ -127,14 +126,20 @@ if [[ "$OS" = "CentOs" ]] ; then
 		PACKAGE_REMOVER="yum -y -q remove"
 	fi
 	
-		if  [[ "$VER" = "7" || "$VER" = "8" ]]; then
-			DB_PCKG="mariadb" &&  echo "DB server will be mariaDB"
-		else 
-			DB_PCKG="mysql" && echo "DB server will be mySQL"
-		fi
-		HTTP_PCKG="httpd"
-		PHP_PCKG="php"
-		BIND_PCKG="bind"
+	if  [[ "$VER" = "7" || "$VER" = "8" ]]; then
+		DB_PCKG="mariadb" &&  echo "DB server will be mariaDB"
+		DB_SERVICE="mariadb"
+	else 
+		DB_PCKG="mysql" && echo "DB server will be mySQL"
+		DB_SERVICE="mysql"
+	fi
+	HTTP_PCKG="httpd"
+	PHP_PCKG="php"
+	BIND_PCKG="bind"
+	
+	HTTP_SERVICE="httpd"
+	BIND_SERVICE="bind"
+	CRON_SERVICE="crond"
 	
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
     PACKAGE_INSTALLER="apt-get -yqq install"
@@ -142,8 +147,11 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	
 	DB_PCKG="mysql-server"
     HTTP_PCKG="apache2"
-    PHP_PCKG="apache2-mod-php5"
     BIND_PCKG="bind9"
+	
+    HTTP_SERVICE="apache2"
+    BIND_SERVICE="bind9"
+	CRON_SERVICE="cron"
 	
 fi
 
@@ -162,10 +170,6 @@ if [[ "$OS" = "CentOs" ]]; then
 
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	if [[ "$VER" = "16.04" || "$VER" = "8" ]]; then
-		# Install PHP 7.3 Repos & enable
-		#$PACKAGE_INSTALLER software-properties-common
-		#add-apt-repository -y ppa:ondrej/apache2
-		#add-apt-repository -y ppa:ondrej/php
 		apt-get -yqq update
 		apt-get -yqq upgrade
 	fi
@@ -173,6 +177,9 @@ fi
 
 # ***************************************
 # Installation really starts here
+
+# Stop Apache Sentora Services to avoid any user issues while upgrading
+service "$HTTP_SERVICE" stop
 
 # Install PHP 7.x
    
@@ -323,15 +330,14 @@ fi
 # reset home dir for commands
 cd ~ || exit
 		
-# Download Sentora upgrade packages
-echo -e "\nDownloading Updated package files..." 
-	
-# Clone Github instead
+# Remove OLD BETA version files/folder if left behind
 upgradedir="$HOME/sentora_php7_upgrade"
 if [ -d "$upgradedir" ]; then
 	rm -r ~/sentora_php7_upgrade
 fi
 
+# Download Sentora upgrade packages
+echo -e "\n--- Downloading Proconf files..." 
 
 # Get Sentora Installers/Preconf
 wget -nv -O sentora_preconfig.zip https://github.com/Dukecitysolutions/sentora-installers-dev/archive/master.zip
@@ -341,19 +347,13 @@ unzip -oq sentora_preconfig.zip
 rm -r sentora_preconfig.zip
 
 # Get Sentora core files
+echo -e "\n--- Downloading Core files..." 
 wget -nv -O sentora_core.zip https://github.com/Dukecitysolutions/sentora-core-dev/archive/master.zip
 
 echo -e "\n--- Unzipping core files..."
 unzip -oq sentora_core.zip
 rm -r sentora_core.zip
-	
-# mkdir -p sentora_php7_upgrade
-# cd sentora_php7_upgrade
-# wget -nv -O sentora_php7_upgrade.zip http://zppy-repo.dukecitysolutions.com/repo/sentora-live/php7_upgrade/sentora_php7_upgrade.zip
-	
-#echo -e "\n--- Unzipping files..."
-#unzip -oq sentora_php7_upgrade.zip
-	
+		
 # -------------------------------------------------------------------------------
 # BIND/NAMED DNS Below
 # -------------------------------------------------------------------------------
@@ -451,6 +451,7 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
+echo -e "\n--- Updating Postfix DB..."
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/0-postfix-datetime-fix.sql
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/1-postfix-innodb.sql
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/2-postfix-unused-tables.sql
@@ -492,8 +493,6 @@ elif [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 
 	# Setup proftpd base file to call sentora config
 	rm -f "$FTP_CONF_PATH"
-	#touch "$FTP_CONF_PATH"
-	#echo "include $PANEL_CONF/proftpd/proftpd-mysql.conf" >> "$FTP_CONF_PATH";
 	ln -s "$PANEL_CONF/proftpd/proftpd-mysql.conf" "$FTP_CONF_PATH"
 
 	# Restart Proftpd
@@ -586,13 +585,6 @@ cp -R "$SENTORA_CORE_UPGRADE"/modules/* $PANEL_PATH/panel/modules/
 chmod -R 0777 $PANEL_PATH/panel/modules/*
 
 
-
-
-	
-	
-	
-	
-	
 # Copy New Apache config template files
 echo -e "\n--- Updating Sentora vhost templates..."
 rm -rf /etc/sentora/configs/apache/templates/
@@ -617,7 +609,9 @@ while ! mysql -u root -p"$mysqlpassword" -e ";" ; do
 read -r -p "Cant connect to mysql, please give root password or press ctrl-C to abort: " mysqlpassword
 done
 echo -e "Connection mysql ok"
+echo -e "\n--- Updating Sentora Core DB and Proftpd..."
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/3-core-update.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/4-proftpd-datetime-fix.sql
 	
 # Restart Apache to set Snuffleupagus
 if [[ "$OS" = "CentOs" ]]; then
@@ -632,7 +626,6 @@ fi
 	
 echo -e "\n--- Starting Roundcube upgrade to 1.4.4..."
 
-################## NEW CODE
 # Install Roundcube
 cd $PANEL_PATH/panel/etc/apps
 cp -R $SENTORA_CORE_UPGRADE/etc/apps/webmail webmail
@@ -654,7 +647,7 @@ cp -r  "$SENTORA_CORE_UPGRADE"/etc/lib/pChart2 $PANEL_PATH/panel/etc/lib/
 # Start PHPsysinfo 3.3.1 upgrade Below
 # -------------------------------------------------------------------------------
 	
-echo -e "\nStarting PHPsysinfo upgrade to 3.3.1..."
+echo -e "\n--- Starting PHPsysinfo upgrade to 3.3.1..."
 rm -rf /etc/sentora/panel/etc/apps/phpsysinfo/
 cp -r  "$SENTORA_CORE_UPGRADE"/etc/apps/phpsysinfo $PANEL_PATH/panel/etc/apps/
 	
@@ -664,7 +657,9 @@ mv -f /etc/sentora/panel/etc/apps/phpsysinfo/phpsysinfo.ini.new /etc/sentora/pan
 # -------------------------------------------------------------------------------
 # Start PHPmyadmin 4.9.2 upgrade Below - TESTING WHICH VERSION IS BEST HERE.
 # -------------------------------------------------------------------------------
-		
+
+echo -e "\n--- Configuring phpMyAdmin 4.9.2...\n"	
+	
 #--- Some functions used many times below
 # Random password generator function
 passwordgen() {
@@ -673,7 +668,6 @@ passwordgen() {
    	tr -dc A-Za-z0-9 < /dev/urandom | head -c ${l} | xargs
 }
 	
-echo -e "\n-- Configuring phpMyAdmin 4.9.2..."
 phpmyadminsecret=$(passwordgen 32);
 	
 #echo "password"
@@ -684,13 +678,8 @@ versioncheck() {
 	echo "$@" | gawk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; 
 }
 
-# Start
-echo -e -p "Installer is about to upgrade PHPmyadmin to 4.9.2."
-
-## START Install here
+## START PHPmyadmin Install here
 					
-#PHPMYADMIN_VERSION="STABLE"
-#PHPMYADMIN_VERSION="4.9.2-all-languages"
 cd  $PANEL_PATH/panel/etc/apps/ || exit
 
 rm -rf $PANEL_PATH/panel/etc/apps/phpmyadmin																						
@@ -732,12 +721,6 @@ echo ""
 rm -r "$SENTORA_CORE_UPGRADE"
 rm -r "$SENTORA_PRECONF_UPGRADE"
 
-# Disable PHP 7.1, 7.2, 7.4 package tell we can test. AGAIN to make ubuntu 16.04 didnt override during install(ISSUE)
-if [[ "$OS" = "Ubuntu" ]]; then
-	sudo apt-mark hold php7.1
-	sudo apt-mark hold php7.2
-	sudo apt-mark hold php7.4
-fi
 
 #--- Restart all services to capture output messages, if any
 if [[ "$OS" = "CentOs" && "$VER" == "7" || "$VER" == "8" ]]; then
@@ -759,8 +742,7 @@ service atd restart
 
 # -------------------------------------------------------------------------------
 
-echo -e "\nDone updating all Sentora_core and PHP 7.x files"
-echo -e "\nWe are done upgrading Sentora v1.0.3 to Sentora v1.1.0 w/PHP 7.x support\n"
+echo -e "\n--- Done Upgrading all Sentora core files to v.SENTORA_UPDATER_VERSION\n"
 
 # Wait until the user have read before restarts the server...
 if [[ "$INSTALL" != "auto" ]] ; then
