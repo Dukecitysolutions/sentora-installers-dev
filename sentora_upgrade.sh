@@ -17,15 +17,15 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Supported Operating Systems: 
-# CentOS 7.*/ Minimal, 
+# CentOS 8.*/ Minimal, 
 # Ubuntu server 16.04  
 # 32bit and 64bit
 #
 # Contributions from:
 #
+#   Anthony DeBeaulieu (anthony.d@sentora.org
 #   Pascal Peyremorte (ppeyremorte@sentora.org)
 #   Mehdi Blagui
-#   Anthony DeBeaulieu (anthony.d@sentora.org
 #   Kevin Andrews (kevin@zvps.uk)
 #
 #   and all those who participated to this and to previous installers.
@@ -92,7 +92,7 @@ ARCH=$(uname -m)
 
 echo "- Detected : $OS  $VER  $ARCH"
 
-if [[ "$OS" = "CentOs" && ( "$VER" = "7" ) || 
+if [[ "$OS" = "CentOs" && ( "$VER" = "8" ) || 
       "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]] ; then
     echo "- Ok."
 else
@@ -149,6 +149,7 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
     HTTP_PCKG="apache2"
     BIND_PCKG="bind9"
 	
+	DB_SERVICE="mysql"
     HTTP_SERVICE="apache2"
     BIND_SERVICE="bind9"
 	CRON_SERVICE="cron"
@@ -174,6 +175,9 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 		apt-get -yqq upgrade
 	fi
 fi
+
+
+
 
 # ***************************************
 # Installation really starts here
@@ -269,6 +273,7 @@ mkdir -p /etc/snuffleupagus
 cd /etc || exit
 	
 # Clone Snuffleupagus
+echo -e "\n--- Downloading Snuffleupagus..."
 git clone https://github.com/nbs-system/snuffleupagus
 		
 cd /etc/snuffleupagus/src || exit
@@ -499,7 +504,24 @@ elif [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 	service proftpd restart
 		
 fi
+
+# Fix Proftpd using datetime stamp DEFAULT with ZEROS use NULL. Fixes MYSQL 5.7 NO_ZERO_IN_DATE
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/4-proftpd-datetime-fix.sql
+
+
+# Update Proftpd to use SHA512 if NOT already
+#if ! grep -q SHA512 "/etc/sentora/configs/proftpd/proftpd-mysql.conf"; then
+  
+	# Update Proftp ftpuser passwd column type to vahrchar(180) for SHA512 encrypted passwords & change current plaintext passwords to SHA512.
+	# mysql -u root -p"$mysqlpassword" -D sentora_proftpd -e "ALTER TABLE ftpuser MODIFY COLUMN passwd varchar(180)"
+	# mysql -u root -p"$mysqlpassword" -D sentora_proftpd -e "UPDATE ftpuser SET passwd=SHA2(passwd, 512)"
+
+	# Delete Sentora_core x_ftpaccounts plaintext ft_password_vc column
+	# mysql -u root -p"$mysqlpassword" -D sentora_core -e "ALTER TABLE x_ftpaccounts DROP COLUMN ft_password_vc"
 	
+#fi
+
+
 # -------------------------------------------------------------------------------
 # Start Sentora upgrade Below
 # -------------------------------------------------------------------------------
@@ -527,7 +549,7 @@ cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/sentora.rules /etc/sentora/conf
 cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/cron.rules /etc/sentora/configs/php/sp/
 	
 # Delete All Default core modules for upgrade/updates. Leave Third-party - There might be a better way to do this.
-    ## Removing core for upgrade
+    ## Removing core Modules for upgrade
     # rm -rf $PANEL_PATH/panel/bin/
     # rm -rf $PANEL_PATH/panel/dryden/
     # rm -rf $PANEL_PATH/panel/etc/
@@ -581,7 +603,7 @@ cp -r  "$SENTORA_PRECONF_UPGRADE"/preconf/php/sp/cron.rules /etc/sentora/configs
 # Upgrade all modules with new files from master core.
 cp -R "$SENTORA_CORE_UPGRADE"/modules/* $PANEL_PATH/panel/modules/
 
-# Set all modules to 0777 permissions - Need to fix later.
+# Set all modules to 0777 permissions
 chmod -R 0777 $PANEL_PATH/panel/modules/*
 
 
@@ -611,7 +633,7 @@ done
 echo -e "Connection mysql ok"
 echo -e "\n--- Updating Sentora Core DB and Proftpd..."
 mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/3-core-update.sql
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/4-proftpd-datetime-fix.sql
+
 	
 # Restart Apache to set Snuffleupagus
 if [[ "$OS" = "CentOs" ]]; then
@@ -626,8 +648,18 @@ fi
 	
 echo -e "\n--- Starting Roundcube upgrade to 1.4.4..."
 
-# Install Roundcube
+# Start Roundcube upgrade
 cd $PANEL_PATH/panel/etc/apps
+
+# Backup old Roundcube install for admins to use
+echo -e "\n#### Backup of old roundcube site files has been created at webmail_old. Use this to copy any info you need like plugins/modules ####\n"
+mkdir -p webmail_old
+mv webmail webmail_old
+
+# Remove old Roundcound to upgrade with New files.
+rm -r webmail
+
+# Upgrade Roundcube core files.
 cp -R $SENTORA_CORE_UPGRADE/etc/apps/webmail webmail
 chown -R root:root /etc/sentora/panel/etc/apps/webmail
 
@@ -731,18 +763,26 @@ if [[ "$OS" = "CentOs" && "$VER" == "7" || "$VER" == "8" ]]; then
     }
 fi
 
+echo -e "\n--- Restarting $DB_SERVICE..."
 service "$DB_SERVICE" restart
+echo -e "\n--- Restarting $HTTP_SERVICE..."
 service "$HTTP_SERVICE" restart
+echo -e "\n--- Restarting Postfix..."
 service postfix restart
+echo -e "\n--- Restarting Dovecot..."
 service dovecot restart
+echo -e "\n--- Restarting CRON..."
 service "$CRON_SERVICE" restart
+echo -e "\n--- Restarting Bind9/Named..."
 service "$BIND_SERVICE" restart
+echo -e "\n--- Restarting Proftpd..."
 service proftpd restart
+echo -e "\n--- Restarting ATD..."
 service atd restart
 
 # -------------------------------------------------------------------------------
 
-echo -e "\n--- Done Upgrading all Sentora core files to v.SENTORA_UPDATER_VERSION\n"
+echo -e "\n--- Done Upgrading all Sentora core files\n"
 
 # Wait until the user have read before restarts the server...
 if [[ "$INSTALL" != "auto" ]] ; then
