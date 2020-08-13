@@ -36,6 +36,7 @@
 # master - latest unstable
 # 1.0.3 - example stable tag
 ##
+
 SENTORA_UPDATER_VERSION="1.1.0" # PRODUCTION READY
 SENTORA_PRECONF_VERSION="dev-master"
 SENTORA_CORE_VERSION="dev-master"
