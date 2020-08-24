@@ -325,8 +325,27 @@ if [[ "$PANEL_FQDN" == "" ]] ; then
     done
 fi
 
+
 # ***************************************
 # Installation really starts here
+
+echo -e "\n# -------------------------------------------------------------------------------"
+
+#--- Setup Sentora admin contact info
+
+echo -e "\n--- Please Enter vaild contact info for the Sentora system admin or owner below:\n"
+
+# Get Admin contact info 
+read -r -e -p "Enter Full name: " -i "$ADMIN_NAME" ADMIN_NAME
+read -r -e -p "Enter E-mail: " -i "$ADMIN_EMAIL" ADMIN_EMAIL
+read -r -e -p "Enter Phone Number: " -i "$ADMIN_PHONE" ADMIN_PHONE
+read -r -e -p "Enter Street Address: " -i "$ADMIN_ADDRESS" ADMIN_ADDRESS
+read -r -e -p "Enter City, State or Province: " -i "$ADMIN_PROVINCE" ADMIN_PROVINCE
+read -r -e -p "Enter Postal code: " -i "$ADMIN_POSTALCODE" ADMIN_POSTALCODE
+read -r -e -p "Enter Country: " -i "$ADMIN_COUNTRY" ADMIN_COUNTRY
+
+echo -e "\n# -------------------------------------------------------------------------------\n"
+
 
 #--- Set custom logging methods so we create a log file in the current working directory.
 logfile=$(date +%Y-%m-%d_%H.%M.%S_sentora_install.log)
@@ -1653,16 +1672,36 @@ rm -r $PANEL_CONF/php/sp/snuffleupagus.rules
 #fi
 
 echo -e "\n--- Restarting Services..."
+echo -e "--- Restarting $DB_SERVICE..."
 service "$DB_SERVICE" restart
+echo -e "--- Restarting $HTTP_SERVICE..."
 service "$HTTP_SERVICE" restart
+echo -e "--- Restarting Postfix..."
 service postfix restart
+echo -e "--- Restarting Dovecot..."
 service dovecot restart
+echo -e "--- Restarting CRON..."
 service "$CRON_SERVICE" restart
+echo -e "--- Restarting Bind9/Named..."
 service "$BIND_SERVICE" restart
+echo -e "--- Restarting Proftpd..."
 service proftpd restart
+echo -e "--- Restarting ATD..."
 service atd restart
 
 echo -e "\n--- Finished Restarting Services...\n"
+
+echo -e "# -------------------------------------------------------------------------------"
+
+# Set admin contact info to zadmin profile
+
+echo -e "\n--- Updating Admin contact Info..."
+mysql -u root -p"$mysqlpassword" -e "UPDATE sentora_core.x_accounts SET ac_email_vc='$ADMIN_EMAIL' WHERE sentora_core.x_accounts.ac_id_pk = 1"
+mysql -u root -p"$mysqlpassword" -e "UPDATE sentora_core.x_profiles SET ud_fullname_vc='$ADMIN_NAME', ud_phone_vc='$ADMIN_PHONE', ud_address_tx='$ADMIN_ADDRESS\r\n$ADMIN_PROVINCE $ADMIN_POSTALCODE\r\n$ADMIN_COUNTRY', ud_postcode_vc='$ADMIN_POSTALCODE' WHERE sentora_core.x_profiles.ud_id_pk = 1"
+
+echo -e "\n--- Done Updating admin contact info.\n"
+
+echo -e "# -------------------------------------------------------------------------------"
 
 #--- Store the passwords for user reference
 {
