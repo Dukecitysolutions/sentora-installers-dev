@@ -456,7 +456,7 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
     rm -rf "/etc/apt/sources.list/*"
     cp "/etc/apt/sources.list" "/etc/apt/sources.list.save"
 
-    if [[ "$VER" = "14.04" || "$VER" = "16.04" ]]; then #################### ADDED 16.04
+    if [[ "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" ]]; then
         cat > /etc/apt/sources.list <<EOF
 #Depots main restricted
 deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) main restricted universe multiverse
@@ -925,7 +925,7 @@ fi
 
 # Edit deamon_directory in postfix main.cf to fix startup issue.
 if [[ "$OS" = "Ubuntu" ]]; then
-	if [[ "$VER" = "16.04" ]]; then
+	if [[ "$VER" = "16.04" || "$VER" = "18.04" ]]; then
 		sed -i "s|daemon_directory = /usr/lib/postfix|daemon_directory = /usr/lib/postfix/sbin|" $PANEL_CONF/postfix/main.cf
 	fi
 fi
@@ -1042,7 +1042,7 @@ if [[ "$OS" = "CentOs" ]]; then
     sed -i "s|DocumentRoot \"/var/www/html\"|DocumentRoot $PANEL_PATH/panel|" "$HTTP_CONF_PATH"
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
     # disable completely sites-enabled/000-default.conf
-    if [[ "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "8" ]]; then  ############### ADDED 16.04
+    if [[ "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "8" ]]; then
         sed -i "s|IncludeOptional sites-enabled|#&|" "$HTTP_CONF_PATH"
     else
         sed -i "s|Include sites-enabled|#&|" "$HTTP_CONF_PATH"
@@ -1060,7 +1060,7 @@ fi
 
 # adjustments for apache 2.4
 if [[ ("$OS" = "CentOs" && "$VER" = "7") || 
-      ("$OS" = "Ubuntu" && "$VER" = "14.04" || "$VER" = "16.04") || ########## ADDED 16.04
+      ("$OS" = "Ubuntu" && "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04") || 
       ("$OS" = "debian" && "$VER" = "8") ]] ; then 
     # Order deny,allow / Deny from all   ->  Require all denied
     sed -i 's|Order deny,allow|Require all denied|I'  $PANEL_CONF/apache/httpd.conf
@@ -1257,10 +1257,30 @@ else
 	    	$PACKAGE_INSTALLER libapache2-mod-php5 php5-common php5-cli php5-mysql php5-gd php5-mcrypt php5-curl php-pear php5-imap php5-xmlrpc php5-xsl php5-intl
 			
 		elif [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then
-			$PACKAGE_INSTALLER libapache2-mod-php7.0 php7.0-common php7.0-cli php7.0-mysql php7.0-gd php7.0-mcrypt php7.0-curl php-pear php7.0-imap php7.0-xmlrpc php7.0-xsl php7.0-intl php-mbstring php7.0-mbstring php-gettext php7.0-dev php7.0-zip
+			#$PACKAGE_INSTALLER libapache2-mod-php7.0 php7.0-common php7.0-cli php7.0-mysql php7.0-gd php7.0-mcrypt php7.0-curl php-pear php7.0-imap php7.0-xmlrpc php7.0-xsl php7.0-intl php-mbstring php7.0-mbstring php-gettext php7.0-dev php7.0-zip
 			
+			$PACKAGE_INSTALLER libapache2-mod-php php-common php-cli php-mysql php-gd php-curl php-pear php-imap php-xmlrpc php-xsl php-intl php-mbstring php-gettext php-dev php-zip
+			
+		fi
+		
+		# Set PHP.ini path & PHP extra settings or modules
+		if [[ "$VER" = "16.04" ]]; then
 			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"
-		fi		
+			
+			# Install PHP mcrypt
+			$PACKAGE_INSTALLER php-mcrypt
+					
+		elif [[ "$VER" = "18.04" ]]; then
+			PHP_INI_PATH="/etc/php/7.2/apache2/php.ini"
+			
+			# Install PHP mcrypt
+
+		elif [[ "$VER" = "20.04" ]]; then
+			PHP_INI_PATH="/etc/php/7.4/apache2/php.ini"
+			
+			# Install PHP mcrypt
+		
+		fi	
 	fi
 fi
 
@@ -1501,6 +1521,34 @@ if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	fi
 fi
 
+
+# Fix/Disable Named/bind dnssec-lookaside
+if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+
+	# Bind/Named v.9.10 or OLDER
+	if [[ "$VER" = "8" || "$VER" = "16.04" ]]; then
+		sed -i "s|dnssec-lookaside auto|dnssec-lookaside no|g" $BIND_FILES/named.conf
+		
+	# Bind/Named v.9.11 or NEWER
+	elif [[ "$VER" = "18.04" ]]; then
+		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+	
+	fi
+	
+elif [[ "$OS" = "CentOs" ]]; then
+
+	# Bind/Named v.9.11 or NEWER
+	if [[ "$VER" = "8" ]]; then
+		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+		
+	fi
+
+fi
+	
+	
+	
+	
+	
 #--- CRON and ATD
 echo -e "\n-- Installing and configuring cron tasks"
 if [[ "$OS" = "CentOs" ]]; then
@@ -1662,14 +1710,7 @@ if [[ "$OS" = "CentOs" && "$VER" == "7" || "$VER" == "8" ]]; then
 fi
 
 # Clean up files needed for install/update
-rm -r $PANEL_CONF/php/sp/snuffleupagus.rules
-
-# Remove Default Snuffleupagus rules need for Sentora Daemon first run. Need to check this first
-#if [[ "$OS" = "CentOs" ]]; then
-	#sed -i 's|sp.configuration_file=/etc/sentora/configs/php/sp/snuffleupagus.rules||g' /etc/php.d/20-snuffleupagus.ini
-#elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
-	#sed -i 's|sp.configuration_file=/etc/sentora/configs/php/sp/snuffleupagus.rules||g' /etc/php/"$PHPVER"/mods-available/snuffleupagus.ini
-#fi
+# N/A
 
 echo -e "\n--- Restarting Services..."
 echo -e "--- Restarting $DB_SERVICE..."
