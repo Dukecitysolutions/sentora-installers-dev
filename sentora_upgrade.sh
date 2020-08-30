@@ -220,6 +220,47 @@ service "$HTTP_SERVICE" stop
 			
 			yum -y --enablerepo=remi-php73 install php php-devel php-gd php-mcrypt php-mysql php-xml php-xmlrpc php-zip
 				
+		elif [[ "$VER" = "8" ]]; then
+		
+			echo -e "\n-Installing Default OS PHP 7.2 version..."
+		
+			## Install PHP 7.2 and update modules
+		
+			$PACKAGE_INSTALLER php php-devel php-gd php-json php-mbstring php-intl php-mysqlnd php-pear php-xml php-xmlrpc php-zip
+            
+            
+            # Get mcrypt, pear and imap files
+			echo -e "\n--- Getting PHP-mcrypt files..."
+			$PACKAGE_INSTALLER libmcrypt-devel libmcrypt #Epel packages 
+			
+			# Install php-imap 
+			echo -e "\n--- Installing PHP-imap..."
+			wget https://rpms.remirepo.net/temp/epel-8-php-7.2/php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
+			$PACKAGE_INSTALLER php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
+			#rm -r php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
+			
+
+            # Enable Mod_php & Prefork for Apache/PHP 7.3
+            sed -i 's|#LoadModule mpm_prefork_module|LoadModule mpm_prefork_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
+            sed -i 's|LoadModule mpm_event_module|#LoadModule mpm_event_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
+			
+			
+			# PHP-mcrypt install code all OS - Check this!!!!!!
+            
+    		# Update Pecl Channels
+			echo -e "\n--- Updating PECL Channels..."
+    		pecl channel-update pecl.php.net
+    		pecl update-channels
+                    
+    		# Install PHP-Mcrypt
+			echo -e "\n--- Installing PHP-mcrypt..."
+    		echo -ne '\n' | sudo pecl install mcrypt
+			
+			# Set mcrypt files		
+			touch /etc/php.d/20-mcrypt.ini
+			echo 'extension=mcrypt.so' >> /etc/php.d/20-mcrypt.ini
+			
+				
 		fi
 		
 		PHP_INI_PATH="/etc/php.ini"
@@ -307,7 +348,7 @@ mkdir /etc/sentora/configs/php
 mkdir /etc/sentora/configs/php/sp
 touch /etc/sentora/configs/php/sp/snuffleupagus.rules
 	
-if [[ "$OS" = "CentOs" && ( "$VER" = "7" ) ]]; then
+if [[ "$OS" = "CentOs" && ( "$VER" = "7" || "$VER" = "8" ) ]]; then
 	
 	# Enable snuffleupagus in PHP.ini
 	echo -e "\nUpdating CentOS PHP.ini Enable snuffleupagus..."
@@ -330,7 +371,7 @@ elif [[ "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]]; then
 fi
 	
 # Restart Apache service
-if [[ "$OS" = "CentOs" && ("$VER" = "7") ]]; then
+if [[ "$OS" = "CentOs" && ("$VER" = "7" || "$VER" = "8") ]]; then
 	systemctl restart httpd
 	
 elif [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
@@ -377,6 +418,20 @@ rm -r sentora_core.zip
 # BIND/NAMED DNS Below
 # -------------------------------------------------------------------------------
 	
+if [[ "$OS" = "CentOs" ]]; then
+    $PACKAGE_INSTALLER bind bind-utils bind-libs
+    BIND_PATH="/etc/named/"
+    BIND_FILES="/etc"
+    BIND_SERVICE="named"
+    BIND_USER="named"
+elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+    $PACKAGE_INSTALLER bind9 bind9utils
+    BIND_PATH="/etc/bind/"
+    BIND_FILES="/etc/bind"
+    BIND_SERVICE="bind9"
+    BIND_USER="bind"
+fi
+	
 echo -e "\n--- Setting up Bind9..."
 	
 # reset home dir for commands
@@ -411,6 +466,26 @@ if [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 	$PANEL_PATH/panel/bin/setso --set bind_log "/var/sentora/logs/bind/bind.log"
 
 fi	
+
+# Fix/Disable Named/bind dnssec-lookaside
+if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+	# Bind/Named v.9.10 or OLDER
+	if [[ "$VER" = "8" || "$VER" = "16.04" ]]; then
+		sed -i "s|dnssec-lookaside auto|dnssec-lookaside no|g" $BIND_FILES/named.conf
+		
+	# Bind/Named v.9.11 or NEWER
+	elif [[ "$VER" = "18.04" ]]; then
+		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+	
+	fi
+elif [[ "$OS" = "CentOs" ]]; then
+
+	# Bind/Named v.9.11 or NEWER
+	if [[ "$VER" = "8" ]]; then
+		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+		
+	fi
+fi
 	
 # -------------------------------------------------------------------------------
 # CRON Below
@@ -481,7 +556,7 @@ mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-up
 
 echo -e "\n--- Setting up Proftpd..."
 
-if [[ "$OS" = "CentOs" && ("$VER" = "7") ]]; then
+if [[ "$OS" = "CentOs" && ("$VER" = "7" || "$VER" = "8") ]]; then
 	echo -e "\n-- Installing ProFTPD if not installed"
 		
 	PACKAGE_INSTALLER="yum -y -q install"
@@ -777,28 +852,7 @@ if [[ "$OS" = "CentOs" && "$VER" == "7" || "$VER" == "8" ]]; then
     }
 fi
 
-echo -e "\n--- Restarting Services..."
-echo -e "--- Restarting $DB_SERVICE..."
-service "$DB_SERVICE" restart
-echo -e "--- Restarting $HTTP_SERVICE..."
-service "$HTTP_SERVICE" restart
-echo -e "--- Restarting Postfix..."
-service postfix restart
-echo -e "--- Restarting Dovecot..."
-service dovecot restart
-echo -e "--- Restarting CRON..."
-service "$CRON_SERVICE" restart
-echo -e "--- Restarting Bind9/Named..."
-service "$BIND_SERVICE" restart
-echo -e "--- Restarting Proftpd..."
-service proftpd restart
-echo -e "--- Restarting ATD..."
-service atd restart
-
-echo -e "\n--- Finished Restarting Services...\n"
-
 echo -e "# -------------------------------------------------------------------------------"
-
 
 # Set admin contact info to zadmin profile
 
@@ -808,8 +862,28 @@ mysql -u root -p"$mysqlpassword" -e "UPDATE sentora_core.x_profiles SET ud_fulln
 
 echo -e "\n--- Done Updating admin contact info.\n"
 
-
 echo -e "# -------------------------------------------------------------------------------"
+
+echo -e "\n--- Restarting Services"
+echo -e "Restarting $DB_SERVICE..."
+service "$DB_SERVICE" restart
+echo -e "Restarting $HTTP_SERVICE..."
+service "$HTTP_SERVICE" restart
+echo -e "Restarting Postfix..."
+service postfix restart
+echo -e "Restarting Dovecot..."
+service dovecot restart
+echo -e "Restarting CRON..."
+service "$CRON_SERVICE" restart
+echo -e "Restarting Bind9/Named..."
+service "$BIND_SERVICE" restart
+echo -e "Restarting Proftpd..."
+service proftpd restart
+echo -e "Restarting ATD..."
+service atd restart
+
+echo -e "\n--- Finished Restarting Services...\n"
+
 
 echo -e "\n--- Done Upgrading all Sentora core files\n"
 
