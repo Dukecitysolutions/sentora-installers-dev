@@ -19,10 +19,14 @@ SET time_zone = "+00:00";
 --
 -- Database: `sentora_proftpd`
 --
+
 CREATE DATABASE `sentora_proftpd`;
+
 USE `sentora_proftpd`;
-CREATE USER proftpd@localhost IDENTIFIED BY 'proftpd';
-GRANT ALL PRIVILEGES ON sentora_proftpd . * TO proftpd@localhost;
+
+-- CREATE USER proftpd@localhost IDENTIFIED BY 'proftpd';
+-- GRANT ALL PRIVILEGES ON sentora_proftpd . * TO proftpd@localhost;
+
 -- --------------------------------------------------------
 
 --

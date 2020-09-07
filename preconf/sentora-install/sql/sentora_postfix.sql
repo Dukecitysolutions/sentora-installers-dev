@@ -7,13 +7,13 @@ SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',
 SET @new_sql_mode := TRIM(BOTH ',' FROM REPLACE(CONCAT(',',@new_sql_mode,','),',NO_ZERO_IN_DATE,',','));
 SET @@sql_mode := @new_sql_mode ;
 
+
 CREATE DATABASE `sentora_postfix` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 USE `sentora_postfix`;
 
-CREATE USER postfix@localhost IDENTIFIED BY 'postfix';
-
-GRANT ALL PRIVILEGES ON sentora_postfix . * TO postfix@localhost;
+-- CREATE USER postfix@localhost IDENTIFIED BY 'postfix';
+-- GRANT ALL PRIVILEGES ON sentora_postfix . * TO postfix@localhost;
 
 CREATE TABLE `admin` (
   `username` varchar(255) NOT NULL,
