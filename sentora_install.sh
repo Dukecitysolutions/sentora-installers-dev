@@ -542,6 +542,7 @@ echo -e "\n-- Downloading Sentora, Please wait, this may take several minutes, t
 # Get latest sentora
 while true; do
 
+	# Sentora REPO
     # wget -nv -O sentora_core.zip https://github.com/sentora/sentora-core/archive/$SENTORA_CORE_VERSION.zip
 	wget -nv -O sentora_core.zip https://github.com/Dukecitysolutions/sentora-core-dev/archive/master.zip
 	
@@ -694,6 +695,7 @@ ln -s $PANEL_PATH/panel/bin/setzadmin /usr/bin/setzadmin
 #--- Install preconfig
 while true; do
 
+	# Sentora REPO
     # wget -nv -O sentora_preconfig.zip https://github.com/sentora/sentora-installers/archive/$SENTORA_INSTALLER_VERSION.zip
 	wget -nv -O sentora_preconfig.zip https://github.com/Dukecitysolutions/sentora-installers-dev/archive/master.zip
 	
@@ -804,11 +806,13 @@ if [ -z "$mysqlpassword" ]; then
 			
 	elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 		# Ubuntu 16.04-20.04 w/Mysql 5.7
-		if [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then
+		if [[ "$VER" = "16.04" || "$VER" = "18.04" ]]; then
 			mysql -u root -e "UPDATE mysql.user SET plugin = 'mysql_native_password', authentication_string = PASSWORD('$mysqlpassword') WHERE User = 'root' AND Host = 'localhost'";
-		else
-		# Mysql 5.6 or below
-			mysqladmin -u root password "$mysqlpassword"
+		elif [[ "$VER" = "20.04" ]]; then
+			# Mysql 8.0 
+			
+			mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$mysqlpassword';";
+						
 		fi
 	fi
 fi
@@ -870,8 +874,16 @@ if [ $PANEL_UPGRADE == false ]; then
     mysql -u root -p"$mysqlpassword" < $PANEL_CONF/sentora-install/sql/sentora_postfix.sql
 fi
 
+
+# OLD
 ## grant will also create users which don't exist and update existing users with password ##
-mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_postfix .* TO 'postfix'@'localhost' identified by '$postfixpassword';";
+##mysql -u root -p"$mysqlpassword" -e "GRANT ALL ON sentora_postfix .* TO 'postfix'@'localhost' identified by '$postfixpassword';";
+
+# Add User for Postfix DB
+mysql -u root -p"$mysqlpassword" -e "CREATE USER postfix@localhost IDENTIFIED BY '$postfixpassword';";
+# Grant ALL PRIVILEGES to Postfix User
+mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_postfix .* TO 'postfix'@'localhost';";
+
 
 mkdir $PANEL_DATA/vmail
 useradd -r -g mail -d $PANEL_DATA/vmail -s /sbin/nologin -c "Virtual maildir" vmail
@@ -1242,8 +1254,7 @@ else
 		elif [[ "$VER" = "8" ]]; then
 			$PACKAGE_INSTALLER php php-devel php-gd php-json php-mbstring php-intl php-mysqlnd php-pear php-xml php-xmlrpc php-zip
             
-            
-            # Get mcrypt, pear and imap files
+            # Get mcrypt files
 			echo -e "\n--- Getting PHP-mcrypt files..."
 			$PACKAGE_INSTALLER libmcrypt-devel libmcrypt #Epel packages 
 			
@@ -1252,10 +1263,6 @@ else
 			wget https://rpms.remirepo.net/temp/epel-8-php-7.2/php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
 			$PACKAGE_INSTALLER php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
 			#rm -r php-imap-7.2.24-1.epel8.7.2.x86_64.rpm
-			
-			
-			 
-			
 			
             # Enable Mod_php & Prefork for Apache/PHP 7.3
             sed -i 's|#LoadModule mpm_prefork_module|LoadModule mpm_prefork_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
@@ -1273,7 +1280,6 @@ else
 		elif [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then	
 			$PACKAGE_INSTALLER libapache2-mod-php php-common php-cli php-mysql php-gd php-curl php-pear php-imap php-xmlrpc php-xsl php-intl php-mbstring php-dev php-zip	
 			
-			
             # Get PHP mcrypt files
             if [[ "$VER" = "16.04" ]]; then
             	$PACKAGE_INSTALLER php-mcrypt
@@ -1283,37 +1289,39 @@ else
             
                 # Download needed files
                 $PACKAGE_INSTALLER libmcrypt-dev
-            fi
-			
-			          
+            fi          
 		fi
 		
 		# Set PHP.ini path
 		if [[ "$VER" = "16.04" ]]; then
-			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"
-								
+			PHP_INI_PATH="/etc/php/7.0/apache2/php.ini"					
 		elif [[ "$VER" = "18.04" ]]; then
 			PHP_INI_PATH="/etc/php/7.2/apache2/php.ini"
-			
 		elif [[ "$VER" = "20.04" ]]; then
-			PHP_INI_PATH="/etc/php/7.4/apache2/php.ini"
-				
-		fi
-				
+			PHP_INI_PATH="/etc/php/7.4/apache2/php.ini"	
+		fi		
 	fi
 	
+	if [[ "$OS" = "CentOs" && ("$VER" = "8" ) || 
+      "$OS" = "Ubuntu" && ("$VER" = "18.04" || "$VER" = "20.04" ) ]] ; then
+	
+		# PHP-mcrypt install code all OS - Check this!!!!!!
+				
+		# Update Pecl Channels
+		echo -e "\n--- Updating PECL Channels..."
+		pecl channel-update pecl.php.net
+		pecl update-channels
+		
+		if [[ "$VER" = "20.04" ]]; then
+			# Make pear cache folder to stop error "Trying to access array offset on value of type bool in PEAR/REST.php on line 187"
+			mkdir -p /tmp/pear/cache
+		fi
+		
+		# Install PHP-Mcrypt
+		echo -e "\n--- Installing PHP-mcrypt..."
+		echo -ne '\n' | sudo pecl install mcrypt 
 
-    # PHP-mcrypt install code all OS - Check this!!!!!!
-            
-    # Update Pecl Channels
-	echo -e "\n--- Updating PECL Channels..."
-    pecl channel-update pecl.php.net
-    pecl update-channels
-                    
-    # Install PHP-Mcrypt
-	echo -e "\n--- Installing PHP-mcrypt..."
-    echo -ne '\n' | sudo pecl install mcrypt
-
+	fi
 
 	# Setup PHP mcrypt config files by OS
 	if [[ "$OS" = "CentOs" ]]; then
@@ -1356,14 +1364,6 @@ else
 	
 fi
 
-
-
-
-
-
-
-
-
 # Setup php upload dir
 mkdir -p $PANEL_DATA/temp
 chmod 1777 $PANEL_DATA/temp/
@@ -1379,7 +1379,9 @@ if [[ "$OS" = "CentOs" ]]; then
     # Remove session & php values from apache that cause override
     sed -i '/php_value/d' /etc/httpd/conf.d/php.conf
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
-    sed -i "s|;session.save_path = .|session.save_path = \"$PANEL_DATA/sessions\"|g" $PHP_INI_PATH
+
+    sed -i "s|;session.save_path = .*|session.save_path = \"$PANEL_DATA/sessions\"|g" $PHP_INI_PATH
+	
 fi
 
 sed -i "/php_value/d" $PHP_INI_PATH
@@ -1433,6 +1435,8 @@ if [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" || "$VER" = "7" |
 	# Update PCRE for CentOs 8 - Fix issue with building Snuffleupagus
 	if [[ "$OS" = "CentOs" && (  "$VER" = "8" ) ]]; then
 		$PACKAGE_INSTALLER pcre-devel
+	elif [[ "$OS" = "Ubuntu" && (  "$VER" = "20.04" ) ]]; then
+		$PACKAGE_INSTALLER libpcre3 libpcre3-dev
 	fi
 	
 	# Build Snuffleupagus
@@ -1491,7 +1495,16 @@ fi
 # Create and configure mysql password for proftpd
 proftpdpassword=$(passwordgen);
 sed -i "s|!SQL_PASSWORD!|$proftpdpassword|" $PANEL_CONF/proftpd/proftpd-mysql.conf
-mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_proftpd .* TO 'proftpd'@'localhost' identified by '$proftpdpassword';";
+
+
+# OLD
+#mysql -u root -p"$mysqlpassword" -e "GRANT ALL ON sentora_proftpd .* TO 'proftpd'@'localhost' identified by '$proftpdpassword';";
+
+# Add User for Proftpd DB
+mysql -u root -p"$mysqlpassword" -e "CREATE USER proftpd@localhost IDENTIFIED BY '$proftpdpassword';";
+# Grant ALL PRIVILEGES to Proftpd User
+mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_proftpd .* TO 'proftpd'@'localhost';";
+
 
 # Assign httpd user and group to all users that will be created
 HTTP_UID=$(id -u "$HTTP_USER")
@@ -1576,7 +1589,17 @@ sed -i "s|!SERVER_IP!|$PUBLIC_IP|" $PANEL_CONF/bind/named.conf
 
 # Build key and conf files
 rm -rf $BIND_FILES/named.conf $BIND_FILES/rndc.conf $BIND_FILES/rndc.key
-rndc-confgen -a -r /dev/urandom
+
+if [[ "$OS" = "CentOs" && ("$VER" = "8" ) || 
+      "$OS" = "Ubuntu" && ("$VER" = "16.04" || "$VER" = "18.04" ) ]] ; then
+	# Create rndc-key
+	rndc-confgen -a -r /dev/urandom
+
+elif [[ "$OS" = "Ubuntu" && ("$VER" = "20.04" ) ]] ; then
+	# Create rndc-key
+	rndc-confgen -a -A hmac-sha256
+fi
+
 cat $BIND_FILES/rndc.key $PANEL_CONF/bind/named.conf > $BIND_FILES/named.conf
 cat $BIND_FILES/rndc.key $PANEL_CONF/bind/rndc.conf > $BIND_FILES/rndc.conf
 rm -f $BIND_FILES/rndc.key
@@ -1592,9 +1615,9 @@ if [[ "$OS" = "CentOs" ]]; then
     fi
 fi
 
-# Ubuntu 16.04-20.04 Bind9 Fixes 
+# Ubuntu 16.04 - 18.04 Bind9 Fixes 
 if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
-	if [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then
+	if [[ "$VER" = "16.04" || "$VER" = "18.04" ]]; then
 		# Disable Bind9(Named) from Apparmor. Apparmor reinstalls with apps(MySQL & Bind9) for some reason.
 		ln -s /etc/apparmor.d/usr.sbin.named /etc/apparmor.d/disable/
 		apparmor_parser -R /etc/apparmor.d/usr.sbin.named
@@ -1604,19 +1627,15 @@ fi
 # Fix/Disable Named/bind dnssec-lookaside
 if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	# Bind/Named v.9.10 or OLDER
-	if [[ "$VER" = "8" || "$VER" = "16.04" ]]; then
-		sed -i "s|dnssec-lookaside auto|dnssec-lookaside no|g" $BIND_FILES/named.conf
-		
-	# Bind/Named v.9.11 or NEWER
-	elif [[ "$VER" = "18.04" || "$VER" = "20.04" ]]; then
-		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+	if [[ "$VER" = "18.04" || "$VER" = "20.04" ]]; then
+		sed -i "s|dnssec-lookaside no|#dnssec-lookaside no|g" $BIND_FILES/named.conf
 	
 	fi
 elif [[ "$OS" = "CentOs" ]]; then
 
 	# Bind/Named v.9.11 or NEWER
 	if [[ "$VER" = "8" ]]; then
-		sed -i "s|dnssec-lookaside auto|#dnssec-lookaside auto|g" $BIND_FILES/named.conf
+		sed -i "s|dnssec-lookaside no|#dnssec-lookaside no|g" $BIND_FILES/named.conf
 		
 	fi
 fi
@@ -1695,11 +1714,20 @@ fi
 # Create and configure mysql password for roundcube
 roundcubepassword=$(passwordgen);
 sed -i "s|!ROUNDCUBE_PASSWORD!|$roundcubepassword|" $PANEL_CONF/roundcube/roundcube_config.inc.php
-mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_roundcube .* TO 'roundcube'@'localhost' identified by '$roundcubepassword';";
+
+
+# OLD 
+#mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_roundcube .* TO 'roundcube'@'localhost' identified by '$roundcubepassword';";
+
+# Add User for Roundcube DB
+mysql -u root -p"$mysqlpassword" -e "CREATE USER roundcube@localhost IDENTIFIED BY '$roundcubepassword';";
+# Grant ALL PRIVILEGES to Roundcube User
+mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_roundcube .* TO 'roundcube'@'localhost';";
+
 
 # Delete Roundcube setup files - OLD DONT NEED THESE
-rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
-rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
+#rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
+#rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
 
 # Create and configure des key
 roundcube_des_key=$(passwordgen 24);
@@ -1766,7 +1794,7 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 
 fi
 
-#--- LetsEncrypt ? This should be standard with install. We need a module to help user with settings.
+#--- LetsEncrypt ? This should be standard with install. We need a module to help user with SSL Certs/settings.
 
 
 #--- Resolv.conf deprotect
