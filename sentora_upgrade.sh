@@ -197,6 +197,7 @@ exec > >(tee "$logfile")
 exec 2>&1
 
 # Stop Apache Sentora Services to avoid any user issues while upgrading
+echo -e "\n--- Stopping Apache services to avoid issues with connecting users during upgrade..."
 service "$HTTP_SERVICE" stop
 
 # Install PHP 7.x
@@ -323,7 +324,7 @@ if [[ "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]]; then
 	sudo update-ca-certificates
 fi
 	
-#setup PHP_PERDIR in Snuffleupagus.c in src
+# Setup PHP_PERDIR in Snuffleupagus.c in src
 mkdir -p /etc/snuffleupagus
 cd /etc || exit
 	
@@ -369,15 +370,7 @@ elif [[ "$OS" = "Ubuntu" && ( "$VER" = "16.04" ) ]]; then
 	ln -s /etc/php/"$PHPVER"/mods-available/snuffleupagus.ini /etc/php/"$PHPVER"/apache2/conf.d/20-snuffleupagus.ini
 		
 fi
-	
-# Restart Apache service
-if [[ "$OS" = "CentOs" && ("$VER" = "7" || "$VER" = "8") ]]; then
-	systemctl restart httpd
-	
-elif [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
-	systemctl restart apache2
-fi
-	
+		
 # -------------------------------------------------------------------------------
 # PANEL SERVICE FIXES/UPGRADES BELOW
 # -------------------------------------------------------------------------------
@@ -738,23 +731,19 @@ fi
 echo -e "\n--- Starting Roundcube upgrade to 1.4.4..."
 
 # Start Roundcube upgrade
-cd $PANEL_PATH/panel/etc/apps
 
 # Backup old Roundcube install for admins to use
 echo -e "\n#### Backup of old roundcube site files has been created at webmail_old. Use this to copy any info you need like plugins/modules ####\n"
-mkdir -p webmail_old
-mv webmail webmail_old
+cp -r $PANEL_PATH/panel/etc/apps/webmail $PANEL_PATH/panel/etc/apps/webmail_old
 
-# Remove old Roundcound to upgrade with New files.
-rm -r webmail
+# Upgrade Roundcube
+chmod -R 0777 $SENTORA_CORE_UPGRADE/etc/apps/webmail
+yes | $SENTORA_CORE_UPGRADE/etc/apps/webmail/bin/installto.sh $PANEL_PATH/panel/etc/apps/webmail/
+chown -R root:root $PANEL_PATH/panel/etc/apps/webmail
 
-# Upgrade Roundcube core files.
-cp -R $SENTORA_CORE_UPGRADE/etc/apps/webmail webmail
-chown -R root:root /etc/sentora/panel/etc/apps/webmail
-
-# Map config file in roundcube with symbolic links
-ln -s $PANEL_CONF/roundcube/roundcube_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/config/config.inc.php
-ln -s $PANEL_CONF/roundcube/sieve_config.inc.php $PANEL_PATH/panel/etc/apps/webmail/plugins/managesieve/config.inc.php
+# Delete Roundcube setup files
+rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
+rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
 
 # -------------------------------------------------------------------------------
 # Start pChart2.4 w/PHP 7 support upgrade Below
