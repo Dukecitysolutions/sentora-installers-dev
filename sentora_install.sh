@@ -1252,7 +1252,7 @@ else
 			yum -y --enablerepo=remi-php73 install php php-devel php-gd php-mcrypt php-mysql php-xml php-xmlrpc php-zip
 				
 		elif [[ "$VER" = "8" ]]; then
-			$PACKAGE_INSTALLER php php-devel php-gd php-json php-mbstring php-intl php-mysqlnd php-pear php-xml php-xmlrpc php-zip
+			$PACKAGE_INSTALLER php php-devel php-bcmath php-gd php-json php-mbstring php-intl php-mysqlnd php-pear php-xml php-xmlrpc php-zip
             
             # Get mcrypt files
 			echo -e "\n--- Getting PHP-mcrypt files..."
@@ -1268,6 +1268,10 @@ else
             sed -i 's|#LoadModule mpm_prefork_module|LoadModule mpm_prefork_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
             sed -i 's|LoadModule mpm_event_module|#LoadModule mpm_event_module|g' /etc/httpd/conf.modules.d/00-mpm.conf
 			
+			# Install php-imagick
+			# NEED TO ADD CODE SOON! Missing from os php repos
+			
+
 		fi
 		
 		PHP_INI_PATH="/etc/php.ini"
@@ -1278,7 +1282,8 @@ else
 	    	$PACKAGE_INSTALLER libapache2-mod-php5 php5-common php5-cli php5-mysql php5-gd php5-mcrypt php5-curl php-pear php5-imap php5-xmlrpc php5-xsl php5-intl
 			
 		elif [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ]]; then	
-			$PACKAGE_INSTALLER libapache2-mod-php php-common php-cli php-mysql php-gd php-curl php-pear php-imap php-xmlrpc php-xsl php-intl php-mbstring php-dev php-zip	
+		
+			$PACKAGE_INSTALLER libapache2-mod-php php-common php-bcmath php-cli php-mysql php-gd php-curl php-pear php-imagick php-imap php-xmlrpc php-xsl php-intl php-mbstring php-dev php-zip	
 			
             # Get PHP mcrypt files
             if [[ "$VER" = "16.04" ]]; then
@@ -1363,6 +1368,10 @@ else
 	fi
 	
 fi
+
+# Set PHP Memory limit
+echo -e "\n-- Setting PHP memory limit to 256MB..."
+sed -i "s|memory_limit = .*|memory_limit = 256M|g" $PHP_INI_PATH
 
 # Setup php upload dir
 mkdir -p $PANEL_DATA/temp
