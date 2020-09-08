@@ -1734,9 +1734,9 @@ mysql -u root -p"$mysqlpassword" -e "CREATE USER roundcube@localhost IDENTIFIED 
 mysql -u root -p"$mysqlpassword" -e "GRANT ALL PRIVILEGES ON sentora_roundcube .* TO 'roundcube'@'localhost';";
 
 
-# Delete Roundcube setup files - OLD DONT NEED THESE
-#rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
-#rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
+# Delete Roundcube setup files
+rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
+rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
 
 # Create and configure des key
 roundcube_des_key=$(passwordgen 24);
