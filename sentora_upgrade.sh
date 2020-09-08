@@ -37,7 +37,7 @@
 # 1.0.3 - example stable tag
 ##
 
-SENTORA_UPDATER_VERSION="1.1.0" # PRODUCTION READY
+SENTORA_UPDATER_VERSION="2.0.0" # PRODUCTION READY
 SENTORA_PRECONF_VERSION="dev-master"
 SENTORA_CORE_VERSION="dev-master"
 
@@ -546,9 +546,9 @@ read -r -p "Cant connect to mysql, please give root password or press ctrl-C to 
 done
 echo -e "Connection mysql ok"
 echo -e "\n--- Updating Postfix DB..."
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/0-postfix-datetime-fix.sql
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/1-postfix-innodb.sql
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/2-postfix-unused-tables.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/2-0-0/sql/0-postfix-datetime-fix.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/2-0-0/sql/1-postfix-innodb.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/2-0-0/sql/2-postfix-unused-tables.sql
 	
 # -------------------------------------------------------------------------------
 # ProFTPd Below
@@ -595,7 +595,7 @@ elif [[ "$OS" = "Ubuntu" && ("$VER" = "16.04") ]]; then
 fi
 
 # Fix Proftpd using datetime stamp DEFAULT with ZEROS use NULL. Fixes MYSQL 5.7 NO_ZERO_IN_DATE
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/4-proftpd-datetime-fix.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/2-0-0/sql/4-proftpd-datetime-fix.sql
 
 
 # Update Proftpd to use SHA512 if NOT already
@@ -721,7 +721,7 @@ read -r -p "Cant connect to mysql, please give root password or press ctrl-C to 
 done
 echo -e "Connection mysql ok"
 echo -e "\n--- Updating Sentora Core DB and Proftpd..."
-mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/1-1-0/sql/3-core-update.sql
+mysql -u root -p"$mysqlpassword" < "$SENTORA_PRECONF_UPGRADE"/preconf/sentora-update/2-0-0/sql/3-core-update.sql
 
 	
 # Restart Apache to set Snuffleupagus
