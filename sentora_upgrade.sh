@@ -54,7 +54,7 @@ SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
 #--- Display the 'welcome' splash/user warning info..
 echo ""
 echo "############################################################################################"
-echo "#  Welcome to the Official Sentora Upgrader v."$SENTORA_UPDATER_VERSION"					 #"
+echo "#  Welcome to the Official Sentora Upgrader v."$SENTORA_UPDATER_VERSION"					   #"
 echo "############################################################################################"
 echo ""
 echo -e "\n- Checking that minimal requirements are ok"
@@ -148,7 +148,7 @@ elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	
 fi
 
-# Setup repos for each OS ARCH
+# Setup repos for each OS ARCH and update systems
 if [[ "$OS" = "CentOs" ]]; then
 	if [[ "$VER" = "7" ]]; then
 		# Clean & clear cache
@@ -163,6 +163,7 @@ if [[ "$OS" = "CentOs" ]]; then
 
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 	if [[ "$VER" = "16.04" || "$VER" = "8" ]]; then
+	
 		apt-get -yqq update
 		apt-get -yqq upgrade
 	fi
@@ -196,10 +197,44 @@ touch "$logfile"
 exec > >(tee "$logfile")
 exec 2>&1
 
+myip="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+
+echo "Upgrader version $SENTORA_UPDATER_VERSION"
+echo "Sentora core version $SENTORA_CORE_VERSION"
+echo ""
+echo "Upgrading Sentora $SENTORA_CORE_VERSION at http://$HOSTNAME and IP: ${myip}"
+echo "on server under: $OS  $VER  $ARCH"
+uname -a
+
 # Stop Apache Sentora Services to avoid any user issues while upgrading
 echo -e "\n--- Stopping Apache services to avoid issues with connecting users during upgrade..."
+echo -e "\nStopping $HTTP_SERVICE..."
 service "$HTTP_SERVICE" stop
 
+#--- Apache+Mod_SSL
+echo -e "\n--- Installing Apache MOD_SSL\n"
+if [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
+	if [[ "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" || "$VER" = "8" ]]; then
+		# Install Mod_ssl & openssl
+		#$PACKAGE_INSTALLER mod_ssl
+		$PACKAGE_INSTALLER openssl
+		
+		# Activate mod_ssl
+		a2enmod ssl 
+	fi
+	
+elif [[ "$OS" = "CentOs" ]]; then
+	if [[ "$VER" = "7" || "$VER" = "8" ]]; then
+		# Install Mod_ssl & openssl
+		$PACKAGE_INSTALLER mod_ssl
+		$PACKAGE_INSTALLER openssl
+		
+		# Disable/Comment out Listen 443
+		sed -i 's|Listen 443 https|#Listen 443 https|g' /etc/httpd/conf.d/ssl.conf
+	fi
+fi
+
+#--- PHP
 # Install PHP 7.x
    
     if [[ "$OS" = "CentOs" ]]; then
@@ -261,7 +296,6 @@ service "$HTTP_SERVICE" stop
 			touch /etc/php.d/20-mcrypt.ini
 			echo 'extension=mcrypt.so' >> /etc/php.d/20-mcrypt.ini
 			
-				
 		fi
 		
 		PHP_INI_PATH="/etc/php.ini"
@@ -743,7 +777,7 @@ chown -R root:root $PANEL_PATH/panel/etc/apps/webmail
 
 # Delete Roundcube setup files
 rm -r $PANEL_PATH/panel/etc/apps/webmail/SQL
-rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
+#rm -r $PANEL_PATH/panel/etc/apps/webmail/installer
 
 # -------------------------------------------------------------------------------
 # Start pChart2.4 w/PHP 7 support upgrade Below
