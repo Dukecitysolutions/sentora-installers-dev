@@ -15,7 +15,7 @@ sp.disable_function.function("proc_open").param("command").value_r("[$|;&`\\n\\(
 # Prevent runtime modification of interesting things
 sp.disable_function.function("ini_set").param("varname").value("assert.active").drop();
 sp.disable_function.function("ini_set").param("varname").value("zend.assertions").drop();
-sp.disable_function.function("ini_set").param("varname").value("memory_limit").drop(); ###### 128MB default .If you have issues change vhost .htaccess/php.ini memory_limit instead
+sp.disable_function.function("ini_set").param("varname").value("memory_limit").drop().alias("Warning: PHP Default memory limit is 256MB. Contact your admin for help.");
 sp.disable_function.function("ini_set").param("varname").value("include_path").drop();
 sp.disable_function.function("ini_set").param("varname").value("open_basedir").drop();
 
@@ -37,28 +37,28 @@ sp.disable_function.function("is_callable").param("var").value("proc_open").drop
 sp.disable_function.function("is_callable").param("var").value("passthru").drop();
 
 # Functions - Disabled for system security - WARNING DO NOT CHANGE. USE panel to set vhost override.  :-)
-sp.disable_function.function("passthru").drop();
-sp.disable_function.function("show_source").drop();
-sp.disable_function.function("shell_exec").drop();
-sp.disable_function.function("system").drop();
-sp.disable_function.function("pcntl_exec").drop();
-sp.disable_function.function("popen").drop();
-sp.disable_function.function("pclose").drop();
-sp.disable_function.function("proc_open").drop();
-sp.disable_function.function("proc_nice").drop();
-sp.disable_function.function("proc_terminate").drop();
-sp.disable_function.function("proc_get_status").drop();
-sp.disable_function.function("proc_close").drop();
-sp.disable_function.function("leak").drop();
-sp.disable_function.function("apache_child_terminate").drop();
-sp.disable_function.function("posix_kill").drop();
-sp.disable_function.function("posix_mkfifo").drop();
-sp.disable_function.function("posix_setpgid").drop();
-sp.disable_function.function("posix_setsid").drop();
-sp.disable_function.function("posix_setuid").drop();
-sp.disable_function.function("escapeshellcmd").drop();
-sp.disable_function.function("escapeshellarg").drop();
-sp.disable_function.function("exec").drop();
+sp.disable_function.function("passthru").drop().alias("Warning: passthru() has been disabled for security reasons.");
+sp.disable_function.function("show_source").drop().alias("Warning: show_source() has been disabled for security reasons.");
+sp.disable_function.function("shell_exec").drop().alias("Warning: shell_exec() has been disabled for security reasons.");
+sp.disable_function.function("system").drop().alias("Warning: system() has been disabled for security reasons.");
+sp.disable_function.function("pcntl_exec").drop().alias("Warning: pcntl_exec() has been disabled for security reasons.");
+sp.disable_function.function("popen").drop().alias("Warning: popen() has been disabled for security reasons.");
+sp.disable_function.function("pclose").drop().alias("Warning: pclose() has been disabled for security reasons.");
+sp.disable_function.function("proc_open").drop().alias("Warning: proc_open() has been disabled for security reasons.");
+sp.disable_function.function("proc_nice").drop().alias("Warning: proc_nice() has been disabled for security reasons.");
+sp.disable_function.function("proc_terminate").drop().alias("Warning: proc_terminate() has been disabled for security reasons.");
+sp.disable_function.function("proc_get_status").drop().alias("Warning: proc_get_status() has been disabled for security reasons.");
+sp.disable_function.function("proc_close").drop().alias("Warning: proc_close() has been disabled for security reasons.");
+sp.disable_function.function("leak").drop().alias("Warning: leak() has been disabled for security reasons.");
+sp.disable_function.function("apache_child_terminate").drop().alias("Warning: apache_child_terminate() has been disabled for security reasons.");
+sp.disable_function.function("posix_kill").drop().alias("Warning: posix_kill() has been disabled for security reasons.");
+sp.disable_function.function("posix_mkfifo").drop().alias("Warning: posix_mkfifo() has been disabled for security reasons.");
+sp.disable_function.function("posix_setpgid").drop().alias("Warning: posix_setpgid() has been disabled for security reasons.");
+sp.disable_function.function("posix_setsid").drop().alias("Warning: posix_setsid() has been disabled for security reasons.");
+sp.disable_function.function("posix_setuid").drop().alias("Warning: posix_setuid() has been disabled for security reasons.");
+sp.disable_function.function("escapeshellcmd").drop().alias("Warning: escapeshellcmd() has been disabled for security reasons.");
+sp.disable_function.function("escapeshellarg").drop().alias("Warning: escapeshellarg() has been disabled for security reasons.");
+sp.disable_function.function("exec").drop().alias("Warning: exec() has been disabled for security reasons.");
 
 #### vhost Default snuffleupagus rules - DO NOT EDIT/DELETE ABOVE
 
