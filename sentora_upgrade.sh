@@ -49,7 +49,6 @@ SENTORA_PRECONF_UPGRADE="$HOME/sentora-installers-$SENTORA_CORE_VERSION"
 
 SENTORA_INSTALLED_DBVERSION=$($PANEL_PATH/panel/bin/setso --show dbversion)
 SEN_VER=${SENTORA_INSTALLED_DBVERSION:0:7}
-
 	
 #--- Display the 'welcome' splash/user warning info..
 echo ""
@@ -197,12 +196,12 @@ touch "$logfile"
 exec > >(tee "$logfile")
 exec 2>&1
 
-myip="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+extern_ip="$(wget -qO- http://api.sentora.org/ip.txt)"
 
 echo "Upgrader version $SENTORA_UPDATER_VERSION"
 echo "Sentora core version $SENTORA_CORE_VERSION"
 echo ""
-echo "Upgrading Sentora $SENTORA_CORE_VERSION at http://$HOSTNAME and IP: ${myip}"
+echo "Upgrading Sentora $SENTORA_CORE_VERSION at http://$HOSTNAME and IP: $extern_ip"
 echo "on server under: $OS  $VER  $ARCH"
 uname -a
 
