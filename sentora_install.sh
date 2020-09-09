@@ -38,7 +38,6 @@
 # 1.0.3 - example stable tag
 ##
 
-
 SENTORA_INSTALLER_VERSION="dev-master"
 SENTORA_CORE_VERSION="dev-master"
 
@@ -798,20 +797,27 @@ service $DB_SERVICE start
 if [ -z "$mysqlpassword" ]; then
     mysqlpassword=$(passwordgen);
 	if [[ "$OS" = "CentOs" ]]; then
-		#if  [[ "$VER" = "8" ]]; then
+		if  [[ "$VER" = "8" ]]; then
 			#mysql -u root -e "UPDATE mysql.user SET plugin = 'mysql_native_password', authentication_string = PASSWORD('$mysqlpassword') WHERE User = 'root' AND Host = 'localhost'";
-		#else
-		# Mysql 5.6 or below
+			
+			# MariaDB 10.0 or >
+			mysql -u root -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password";
+			mysql -u root -e "SET PASSWORD = PASSWORD('$mysqlpassword')";
+			
+		else
+			# Mysql 5.6 or below
 			mysqladmin -u root password "$mysqlpassword"
-		#fi
+			
+		fi
 			
 	elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
 		# Ubuntu 16.04-20.04 w/Mysql 5.7
 		if [[ "$VER" = "16.04" || "$VER" = "18.04" ]]; then
+			# Mysql 8.0 or <
 			mysql -u root -e "UPDATE mysql.user SET plugin = 'mysql_native_password', authentication_string = PASSWORD('$mysqlpassword') WHERE User = 'root' AND Host = 'localhost'";
+			
 		elif [[ "$VER" = "20.04" ]]; then
 			# Mysql 8.0 
-			
 			mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$mysqlpassword';";
 						
 		fi
