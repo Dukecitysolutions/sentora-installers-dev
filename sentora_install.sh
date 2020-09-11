@@ -278,7 +278,11 @@ if [[ "$PANEL_FQDN" == "" ]] ; then
         fi
 
         # Checks if the panel domain is already assigned in DNS
-        dns_panel_ip=$(host "$PANEL_FQDN"|grep address|cut -d" " -f4)
+		
+		# Obsolete now using external source for FQDN to IP. 
+        #dns_panel_ip=$(host "$PANEL_FQDN"|grep address|cut -d" " -f4) // Obsolete for modern VM's due to hostname setup in /etc/hosts
+		dns_panel_ip=$(wget -qO- http://api.sentora.org/hostname.txt?domain=$PANEL_FQDN)
+		
         if [[ "$dns_panel_ip" == "" ]]; then
             echo -e "\e[1;31mWARNING: $PANEL_FQDN is not defined in your DNS!\e[0m"
             echo "  You must add records in your DNS manager (and then wait until propagation is done)."
