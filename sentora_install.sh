@@ -1774,10 +1774,10 @@ ln -s $PANEL_CONF/roundcube/sieve_config.inc.php $PANEL_PATH/panel/etc/apps/webm
 echo -e "\n-- Configuring Webalizer"
 
 if [[ "$OS" = "CentOs" ]]; then
-	if [[ $VER = "7" ]] then;
+	if [[ $VER = "7" ]]; then
 		$PACKAGE_INSTALLER webalizer
 	
-	elif [[ $VER = "8" ]] then;
+	elif [[ $VER = "8" ]]; then
 		# Install required packages
 		$PACKAGE_INSTALLER gd-devel libpng-devel
 		
