@@ -534,7 +534,15 @@ fi
 echo -e "\n-- Downloading and installing required tools..."
 if [[ "$OS" = "CentOs" ]]; then
     $PACKAGE_INSTALLER sudo vim make zip unzip chkconfig bash-completion
-    $PACKAGE_INSTALLER ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 
+	$PACKAGE_INSTALLER ld-linux.so.2 libbz2.so.1 
+
+	if  [[ "$VER" = "7" ]]; then
+    	$PACKAGE_INSTALLER libdb-4.7.so libgd.so.2	#### These packages are missing for CentOs 8
+		
+	elif  [[ "$VER" = "" ]]; then
+		$PACKAGE_INSTALLER gd	#### These packages are missing for CentOs 8 repo - libdb-4.8.so
+	fi	
+	
     $PACKAGE_INSTALLER curl curl-devel perl-libwww-perl libxml2 libxml2-devel zip bzip2-devel gcc gcc-c++ at make
     $PACKAGE_INSTALLER redhat-lsb-core ca-certificates e2fsprogs
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
