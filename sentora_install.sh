@@ -1772,11 +1772,39 @@ ln -s $PANEL_CONF/roundcube/sieve_config.inc.php $PANEL_PATH/panel/etc/apps/webm
 
 #--- Webalizer
 echo -e "\n-- Configuring Webalizer"
-$PACKAGE_INSTALLER webalizer
+
 if [[ "$OS" = "CentOs" ]]; then
-    rm -rf /etc/webalizer.conf
+	if [[ $VER = "7" ]] then;
+		$PACKAGE_INSTALLER webalizer
+	
+	elif [[ $VER = "8" ]] then;
+		# Install required packages
+		$PACKAGE_INSTALLER gd-devel libpng-devel
+		
+		# Download Webalizer and decompress
+		wget -c ftp://ftp.mrunix.net/pub/webalizer/webalizer-2.23-08-src.tar.Z -O - | tar -xz
+		
+		# Chnage to webalizer dir
+		cd webalizer-2.23-08
+		
+		# Build and configure webalizer
+		./configure
+		make
+		make install
+		
+		# Change to $HOME DIR
+		cd $HOME
+		
+		# Delete/cleanup webalizer source file
+		rm -rf webalizer-2.23-08	
+		rm -rf /etc/webalizer.conf
+		
+	fi
+	
 elif [[ "$OS" = "Ubuntu" || "$OS" = "debian" ]]; then
-    rm -rf /etc/webalizer/webalizer.conf
+	$PACKAGE_INSTALLER webalizer
+	rm -rf /etc/webalizer/webalizer.conf
+	
 fi
 
 #--- Set some Sentora database entries using. setso and setzadmin (require PHP)
