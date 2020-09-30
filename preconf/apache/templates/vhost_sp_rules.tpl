@@ -15,26 +15,26 @@ sp.disable_function.function("proc_open").param("command").value_r("[$|;&`\\n\\(
 # Prevent runtime modification of interesting things
 sp.disable_function.function("ini_set").param("varname").value("assert.active").drop();
 sp.disable_function.function("ini_set").param("varname").value("zend.assertions").drop();
-sp.disable_function.function("ini_set").param("varname").value("memory_limit").drop().alias("Warning: PHP Default memory limit is 256MB. Contact your admin for help.");
+sp.disable_function.function("ini_set").param("varname").value("memory_limit").drop().alias("Warning: PHP Default memory limit is 256MB. Your App/Framework is requesting more. Contact your admin for help.");
 sp.disable_function.function("ini_set").param("varname").value("include_path").drop();
-sp.disable_function.function("ini_set").param("varname").value("open_basedir").drop();
+# sp.disable_function.function("ini_set").param("varname").value("open_basedir").drop(); ###### Not Needed due to Apache config open_basedir setup
 
 # Detect some backdoors via environnement recon
 sp.disable_function.function("ini_get").param("varname").value("allow_url_fopen").drop();
-sp.disable_function.function("ini_get").param("varname").value("open_basedir").drop();
+# sp.disable_function.function("ini_get").param("varname").value("open_basedir").drop(); ###### Not Needed due to Apache config open_basedir setup
 # sp.disable_function.function("ini_get").param("varname").value_r("suhosin").drop(); ###### CHECK causes Suhosin check issues with apps
-sp.disable_function.function("function_exists").param("function_name").value("eval").drop();
-sp.disable_function.function("function_exists").param("function_name").value("exec").drop();
-sp.disable_function.function("function_exists").param("function_name").value("system").drop();
-sp.disable_function.function("function_exists").param("function_name").value("shell_exec").drop();
-sp.disable_function.function("function_exists").param("function_name").value("proc_open").drop();
-sp.disable_function.function("function_exists").param("function_name").value("passthru").drop();
-sp.disable_function.function("is_callable").param("var").value("eval").drop();
-sp.disable_function.function("is_callable").param("var").value("exec").drop();
-sp.disable_function.function("is_callable").param("var").value("system").drop();
-sp.disable_function.function("is_callable").param("var").value("shell_exec").drop();
-sp.disable_function.function("is_callable").param("var").value("proc_open").drop();
-sp.disable_function.function("is_callable").param("var").value("passthru").drop();
+sp.disable_function.function("function_exists").param("function_name").value("eval").drop().alias("Warning: eval() has been disabled for security reasons.");
+sp.disable_function.function("function_exists").param("function_name").value("exec").drop().alias("Warning: exec() has been disabled for security reasons.");
+sp.disable_function.function("function_exists").param("function_name").value("system").drop().alias("Warning: system() has been disabled for security reasons.");
+sp.disable_function.function("function_exists").param("function_name").value("shell_exec").drop().alias("Warning: shell_exec() has been disabled for security reasons.");
+sp.disable_function.function("function_exists").param("function_name").value("proc_open").drop().alias("Warning: proc_open() has been disabled for security reasons.");
+sp.disable_function.function("function_exists").param("function_name").value("passthru").drop().alias("Warning: passthru() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("eval").drop().alias("Warning: eval() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("exec").drop().alias("Warning: exec() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("system").drop().alias("Warning: system() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("shell_exec").drop().alias("Warning: shell_exec() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("proc_open").drop().alias("Warning: proc_open() has been disabled for security reasons.");
+sp.disable_function.function("is_callable").param("var").value("passthru").drop().alias("Warning: passthru() has been disabled for security reasons.");
 
 # Functions - Disabled for system security - WARNING DO NOT CHANGE. USE panel to set vhost override.  :-)
 sp.disable_function.function("passthru").drop().alias("Warning: passthru() has been disabled for security reasons.");
