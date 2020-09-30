@@ -757,6 +757,25 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	systemctl restart apache2
 fi
 		
+	
+# -------------------------------------------------------------------------------
+#--- LetsEncrypt -  We need a module to help user with SSL Certs/settings. Module coming soon!!!!
+# -------------------------------------------------------------------------------
+
+# Ubuntu 20.04 LetsEncrypt has issues with their code for 20.04. Will resolve later when when they resolve. Maybe i will fix not sure..
+
+if [[ "$OS" = "CentOs" && ( "$VER" = "7" || "$VER" = "8" ) || 
+      "$OS" = "Ubuntu" && ("$VER" = "16.04" || "$VER" = "18.04" ) ||
+      "$OS" = "debian" && ("$VER" = "9" || "$VER" = "10" ) ]] ; then
+	  
+	$PACKAGE_INSTALLER git
+	git clone https://github.com/letsencrypt/letsencrypt
+	cd letsencrypt
+	./letsencrypt-auto --help
+	  
+fi
+
+
 # -------------------------------------------------------------------------------
 # Start Roundcube-1.4.4 upgrade Below
 # -------------------------------------------------------------------------------
