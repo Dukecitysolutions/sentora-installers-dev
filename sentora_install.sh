@@ -335,18 +335,102 @@ fi
 
 echo -e "\n# -------------------------------------------------------------------------------"
 
-#--- Setup Sentora admin contact info
+#--- Setup Sentora Admin contact info
 
 echo -e "\n--- Please Enter vaild contact info for the Sentora system admin or owner below:\n"
 
 # Get Admin contact info 
-read -r -e -p "Enter Full name: " -i "$ADMIN_NAME" ADMIN_NAME
-read -r -e -p "Enter E-mail: " -i "$ADMIN_EMAIL" ADMIN_EMAIL
-read -r -e -p "Enter Phone Number: " -i "$ADMIN_PHONE" ADMIN_PHONE
-read -r -e -p "Enter Street Address: " -i "$ADMIN_ADDRESS" ADMIN_ADDRESS
-read -r -e -p "Enter City, State or Province: " -i "$ADMIN_PROVINCE" ADMIN_PROVINCE
-read -r -e -p "Enter Postal code: " -i "$ADMIN_POSTALCODE" ADMIN_POSTALCODE
-read -r -e -p "Enter Country: " -i "$ADMIN_COUNTRY" ADMIN_COUNTRY
+# ---- Name
+while true
+do
+    read -r -e -p "Enter Full name: " -i "$ADMIN_NAME" ADMIN_NAME
+    echo
+    if [ ! -z "$ADMIN_NAME" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
+# --- Email
+while true
+do
+    read -r -e -p "Enter admin email: " -i "$ADMIN_EMAIL" ADMIN_EMAIL
+    echo
+    if [[ "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$ ]]
+    then
+        break
+    else
+        echo "Email address $ADMIN_EMAIL is invalid."
+    fi
+done
+
+# ---- Phone Number
+while true
+do
+    read -r -e -p "Enter Phone Number: " -i "$ADMIN_PHONE" ADMIN_PHONE
+    echo
+    if [ ! -z "$ADMIN_PHONE" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
+# ---- Address
+while true
+do
+    read -r -e -p "Enter Street Address: " -i "$ADMIN_ADDRESS" ADMIN_ADDRESS
+    echo
+    if [ ! -z "$ADMIN_ADDRESS" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
+# ---- Address - City, State or Province
+while true
+do
+    read -r -e -p "Enter City, State or Province: " -i "$ADMIN_PROVINCE" ADMIN_PROVINCE
+    echo
+    if [ ! -z "$ADMIN_PROVINCE" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
+# ---- Address - Postal code
+while true
+do
+    read -r -e -p "Enter Postal code: " -i "$ADMIN_POSTALCODE" ADMIN_POSTALCODE
+    echo
+    if [ ! -z "$ADMIN_POSTALCODE" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
+# ---- Address - Country
+while true
+do
+    read -r -e -p "Enter Country: " -i "$ADMIN_COUNTRY" ADMIN_COUNTRY
+    echo
+    if [ ! -z "$ADMIN_COUNTRY" ]
+    then
+        break
+    else
+        echo "Entry is Blank. Try again."
+    fi
+done
+
 
 echo -e "\n# -------------------------------------------------------------------------------\n"
 
