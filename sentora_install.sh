@@ -17,8 +17,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Supported Operating Systems: 
-# CentOS 7.*/8.* Minimal, 
-# Ubuntu server 16.04/18.04/20.04 
+# CentOS 8.* Minimal, 
+# Ubuntu server 18.04/20.04 
 # Debian 9.*/10.* 
 # 32bit and 64bit
 #
@@ -58,7 +58,7 @@ echo -e "\nChecking that minimal requirements are ok"
 if [ -f /etc/centos-release ]; then
     OS="CentOs"
     VERFULL=$(sed 's/^.*release //;s/ (Fin.*$//' /etc/centos-release)
-    VER=${VERFULL:0:1} # return 6 or 7
+    VER=${VERFULL:0:1} # return 7 or 8
 elif [ -f /etc/lsb-release ]; then
     OS=$(grep DISTRIB_ID /etc/lsb-release | sed 's/^.*=//')
     VER=$(grep DISTRIB_RELEASE /etc/lsb-release | sed 's/^.*=//')
@@ -281,7 +281,7 @@ if [[ "$PANEL_FQDN" == "" ]] ; then
 		
 		# Obsolete now using external source for FQDN to IP. 
         #dns_panel_ip=$(host "$PANEL_FQDN"|grep address|cut -d" " -f4) // Obsolete for modern VM's due to hostname setup in /etc/hosts
-		dns_panel_ip=$(wget -qO- http://api.sentora.org/hostname.txt?domain=$PANEL_FQDN)
+		dns_panel_ip=$(wget -qO- http://api.sentora.org/hostname.txt?domain="$PANEL_FQDN")
 		
         if [[ "$dns_panel_ip" == "" ]]; then
             echo -e "\e[1;31mWARNING: $PANEL_FQDN is not defined in your DNS!\e[0m"
@@ -345,7 +345,7 @@ while true
 do
     read -r -e -p "Enter Full name: " -i "$ADMIN_NAME" ADMIN_NAME
     echo
-    if [ ! -z "$ADMIN_NAME" ]
+    if [ -n "$ADMIN_NAME" ]
     then
         break
     else
@@ -371,7 +371,7 @@ while true
 do
     read -r -e -p "Enter Phone Number: " -i "$ADMIN_PHONE" ADMIN_PHONE
     echo
-    if [ ! -z "$ADMIN_PHONE" ]
+    if [ -n "$ADMIN_PHONE" ]
     then
         break
     else
@@ -384,7 +384,7 @@ while true
 do
     read -r -e -p "Enter Street Address: " -i "$ADMIN_ADDRESS" ADMIN_ADDRESS
     echo
-    if [ ! -z "$ADMIN_ADDRESS" ]
+    if [ -n "$ADMIN_ADDRESS" ]
     then
         break
     else
@@ -397,7 +397,7 @@ while true
 do
     read -r -e -p "Enter City, State or Province: " -i "$ADMIN_PROVINCE" ADMIN_PROVINCE
     echo
-    if [ ! -z "$ADMIN_PROVINCE" ]
+    if [ -n "$ADMIN_PROVINCE" ]
     then
         break
     else
@@ -410,7 +410,7 @@ while true
 do
     read -r -e -p "Enter Postal code: " -i "$ADMIN_POSTALCODE" ADMIN_POSTALCODE
     echo
-    if [ ! -z "$ADMIN_POSTALCODE" ]
+    if [ -n "$ADMIN_POSTALCODE" ]
     then
         break
     else
@@ -423,7 +423,7 @@ while true
 do
     read -r -e -p "Enter Country: " -i "$ADMIN_COUNTRY" ADMIN_COUNTRY
     echo
-    if [ ! -z "$ADMIN_COUNTRY" ]
+    if [ -n "$ADMIN_COUNTRY" ]
     then
         break
     else
@@ -1869,7 +1869,7 @@ if [[ "$OS" = "CentOs" ]]; then
 		wget -c ftp://ftp.mrunix.net/pub/webalizer/webalizer-2.23-08-src.tar.Z -O - | tar -xz
 		
 		# Chnage to webalizer dir
-		cd webalizer-2.23-08
+		cd webalizer-2.23-08 || exit
 		
 		# Build and configure webalizer
 		./configure
@@ -1877,7 +1877,7 @@ if [[ "$OS" = "CentOs" ]]; then
 		make install
 		
 		# Change to $HOME DIR
-		cd $HOME
+		cd "$HOME" || exit
 		
 		# Delete/cleanup webalizer source file
 		rm -rf webalizer-2.23-08	
@@ -1945,7 +1945,7 @@ if [[ "$OS" = "CentOs" && ( "$VER" = "7" || "$VER" = "8" ) ||
 	  
 	$PACKAGE_INSTALLER git
 	git clone https://github.com/letsencrypt/letsencrypt
-	cd letsencrypt
+	cd letsencrypt || exit
 	./letsencrypt-auto --help
 	  
 fi
