@@ -24,9 +24,9 @@
 #
 # Contributions from:
 #
+#   Anthony DeBeaulieu (anthony.d@sentora.org
 #   Pascal Peyremorte (ppeyremorte@sentora.org)
 #   Mehdi Blagui
-#   Anthony DeBeaulieu (anthony.d@sentora.org
 #   Kevin Andrews (kevin@zvps.uk)
 #
 #   and all those who participated to this and to previous installers.
@@ -58,7 +58,7 @@ echo -e "\nChecking that minimal requirements are ok"
 if [ -f /etc/centos-release ]; then
     OS="CentOs"
     VERFULL=$(sed 's/^.*release //;s/ (Fin.*$//' /etc/centos-release)
-    VER=${VERFULL:0:1} # return 7 or 8
+    VER=${VERFULL:0:1} # return 8
 elif [ -f /etc/lsb-release ]; then
     OS=$(grep DISTRIB_ID /etc/lsb-release | sed 's/^.*=//')
     VER=$(grep DISTRIB_RELEASE /etc/lsb-release | sed 's/^.*=//')
@@ -73,9 +73,9 @@ ARCH=$(uname -m)
 
 echo "Detected : $OS  $VER  $ARCH"
 
-if [[ "$OS" = "CentOs" && ("$VER" = "7" || "$VER" = "8" ) || 
-      "$OS" = "Ubuntu" && ("$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ) ||
-      "$OS" = "debian" && ("$VER" = "9" || "$VER" = "10" ) ]] ; then
+if [[ "$OS" = "CentOs" && ( "$VER" = "8" ) || 
+      "$OS" = "Ubuntu" && ( "$VER" = "18.04" || "$VER" = "20.04" ) ||
+      "$OS" = "debian" && ( "$VER" = "9" || "$VER" = "10" ) ]] ; then
     echo "Ok."
 else
     echo "Sorry, this OS is not supported by Sentora." 
