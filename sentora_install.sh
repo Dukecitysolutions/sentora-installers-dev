@@ -1941,16 +1941,16 @@ fi
 
 # Ubuntu 20.04 LetsEncrypt has issues with their code for 20.04. Will resolve later when when they resolve. Maybe i will fix not sure..
 
-if [[ "$OS" = "CentOs" && ( "$VER" = "7" || "$VER" = "8" ) || 
-      "$OS" = "Ubuntu" && ("$VER" = "16.04" || "$VER" = "18.04" ) ||
-      "$OS" = "debian" && ("$VER" = "9" || "$VER" = "10" ) ]] ; then
+#if [[ "$OS" = "CentOs" && ( "$VER" = "7" || "$VER" = "8" ) || 
+      #"$OS" = "Ubuntu" && ("$VER" = "16.04" || "$VER" = "18.04" ) ||
+      #"$OS" = "debian" && ("$VER" = "9" || "$VER" = "10" ) ]] ; then
 	  
-	$PACKAGE_INSTALLER git
-	git clone https://github.com/letsencrypt/letsencrypt
-	cd letsencrypt || exit
-	./letsencrypt-auto --help
+	#$PACKAGE_INSTALLER git
+	#git clone https://github.com/letsencrypt/letsencrypt
+	#cd letsencrypt || exit
+	#./letsencrypt-auto --help
 	  
-fi
+#fi
 
 #--- Resolv.conf deprotect
 chattr -i /etc/resolv.conf
