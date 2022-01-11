@@ -1863,25 +1863,27 @@ if [[ "$OS" = "CentOs" ]]; then
 	
 	elif [[ $VER = "8" ]]; then
 		# Install required packages
-		$PACKAGE_INSTALLER gd-devel libpng-devel
+		#$PACKAGE_INSTALLER gd-devel libpng-devel
 		
 		# Download Webalizer and decompress
-		wget -c ftp://ftp.mrunix.net/pub/webalizer/webalizer-2.23-08-src.tar.Z -O - | tar -xz
+		#wget -c ftp://ftp.mrunix.net/pub/webalizer/webalizer-2.23-08-src.tar.Z -O - | tar -xz
 		
 		# Chnage to webalizer dir
-		cd webalizer-2.23-08 || exit
+		#cd webalizer-2.23-08 || exit
 		
 		# Build and configure webalizer
-		./configure
-		make
-		make install
+		#./configure
+		#make
+		#make install
 		
 		# Change to $HOME DIR
-		cd "$HOME" || exit
+		#cd "$HOME" || exit
 		
 		# Delete/cleanup webalizer source file
-		rm -rf webalizer-2.23-08	
-		rm -rf /etc/webalizer.conf
+		#rm -rf webalizer-2.23-08	
+		#rm -rf /etc/webalizer.conf
+		
+		$PACKAGE_INSTALLER webalizer.x86_64
 		
 	fi
 	
