@@ -37,9 +37,9 @@ ErrorLog {$vh.error_log}
 CustomLog {$vh.access_log}
 CustomLog {$vh.bandwidth_log}
 
-{if $loaderrorpages <> "0"}
-{foreach $loaderrorpages as $errorpage}
-{$errorpage}
+{if $vhloaderrorpages <> "0"}
+{foreach $vhloaderrorpages as $errorpages}
+{$errorpages}
 {/foreach}
 {/if}
 

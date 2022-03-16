@@ -24,8 +24,8 @@ CustomLog "{$cp.log_dir}sentora-access.log" combined
 CustomLog "{$cp.log_dir}sentora-bandwidth.log" common
 
 {if $loaderrorpages <> "0"}
-{foreach $loaderrorpages as $errorpage}
-{$errorpage}
+{foreach $loaderrorpages as $errorpages}
+{$errorpages}
 {/foreach}
 {/if}
 
