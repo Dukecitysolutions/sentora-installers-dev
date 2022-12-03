@@ -20,7 +20,7 @@ sp.disable_function.function("ini_set").param("varname").value("include_path").d
 # sp.disable_function.function("ini_set").param("varname").value("open_basedir").drop(); ###### Not Needed due to Apache config open_basedir setup
 
 # Detect some backdoors via environnement recon
-sp.disable_function.function("ini_get").param("varname").value("allow_url_fopen").drop();
+# sp.disable_function.function("ini_get").param("varname").value("allow_url_fopen").drop();
 # sp.disable_function.function("ini_get").param("varname").value("open_basedir").drop(); ###### Not Needed due to Apache config open_basedir setup
 # sp.disable_function.function("ini_get").param("varname").value_r("suhosin").drop(); ###### CHECK causes Suhosin check issues with apps
 sp.disable_function.function("function_exists").param("function_name").value("eval").drop().alias("Warning: eval() has been disabled for security reasons.");

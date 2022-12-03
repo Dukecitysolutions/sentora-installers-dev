@@ -3,8 +3,8 @@
 ServerName {$vh.server_name}
 ServerAlias {$vh.server_alias}
 ServerAdmin {$vh.server_admiin}
-DocumentRoot "{$vh.static_dir}"
-<Directory "{$vh.static_dir}">
+DocumentRoot "{$vh.static_dir}diskexceeded"
+<Directory "{$vh.static_dir}diskexceeded">
     Options +FollowSymLinks -Indexes
     AllowOverride All
 {if $vh.grant == '1'}
