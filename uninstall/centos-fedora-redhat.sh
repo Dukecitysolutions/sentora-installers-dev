@@ -6,7 +6,7 @@ yum -y erase ld-linux.so.2 libbz2.so.1 libdb-4.7.so libgd.so.2 httpd php php-suh
 rm -rf /etc/zpanel
 rm -rf /var/zpanel
 
-# Delete Sentora
+# Delete Sentora if they exists
 rm -rf /etc/sentora
 rm -rf /var/sentora
 

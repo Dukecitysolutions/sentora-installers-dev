@@ -19,7 +19,7 @@
 # Supported Operating Systems: 
 # CentOS 8.* Minimal, 
 # Ubuntu server 18.04/20.04 
-# Debian 9.*/10.* 
+# Debian 9.*/10.* COMING SOON!!!
 # 32bit and 64bit
 #
 # Contributions from:
